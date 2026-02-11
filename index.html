@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Formantics – Formatting to Semantics</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="theme-light">
+    <header class="app-header">
+      <div class="app-header-main">
+        <h1 class="app-title">Formantics</h1>
+        <p class="app-subtitle">
+          Convert visual formatting into explicit semantic tags that AI can understand.
+        </p>
+      </div>
+      <div class="theme-toggle" aria-label="Background theme" role="radiogroup">
+        <button
+          id="lightThemeBtn"
+          class="theme-toggle-btn is-active"
+          type="button"
+          aria-pressed="true"
+          role="radio"
+        >
+          Light
+        </button>
+        <button
+          id="darkThemeBtn"
+          class="theme-toggle-btn"
+          type="button"
+          aria-pressed="false"
+          role="radio"
+        >
+          Dark
+        </button>
+      </div>
+    </header>
+
+    <main class="app-main" aria-label="Formantics tool">
+      <section class="panel" aria-labelledby="input-section-title">
+        <div class="panel-header">
+          <h2 id="input-section-title">Input</h2>
+          <p class="panel-description">
+            Paste rich text here. Formatting such as <strong>bold</strong>, color, headings, and emphasis will be preserved.
+          </p>
+        </div>
+        <div
+          id="editor"
+          class="editor"
+          contenteditable="true"
+          aria-label="Rich text input"
+          spellcheck="true"
+        ></div>
+        <div class="panel-footer">
+          <button
+            id="parseBtn"
+            class="primary-btn"
+            type="button"
+            disabled
+          >
+            Parse formatting
+          </button>
+          <p class="hint">
+            Order will never change. You decide which formats have meaning; everything else is left untouched.
+          </p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="detected-section-title">
+        <div class="panel-header">
+          <h2 id="detected-section-title">Detected formatting</h2>
+          <p class="panel-description">
+            Only formats that actually appear in your text are listed. Optionally assign semantic meanings.
+          </p>
+        </div>
+        <div id="detectedFormattingContainer" class="detected-list empty-state">
+          <p class="empty-message">
+            Nothing detected yet. Paste content and click <strong>Parse formatting</strong>.
+          </p>
+        </div>
+        <div class="panel-footer">
+          <button
+            id="generateBtn"
+            class="primary-btn"
+            type="button"
+            disabled
+          >
+            Generate text
+          </button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="output-section-title">
+        <div class="panel-header">
+          <h2 id="output-section-title">Output</h2>
+          <p class="panel-description">
+            AI‑ready text with explicit semantic tags. Copy directly into ChatGPT, Claude, Gemini, or other tools.
+          </p>
+        </div>
+        <div class="output-controls">
+          <div class="output-controls-main">
+            <button
+              id="copyBtn"
+              class="primary-btn"
+              type="button"
+              disabled
+            >
+              Copy output
+            </button>
+            <span id="copyStatus" class="copy-status" aria-live="polite"></span>
+          </div>
+          <div class="feedback-bar">
+            <span class="feedback-label-inline">How is Formantics working for you?</span>
+            <div class="feedback-buttons">
+              <button
+                id="feedbackLikeBtn"
+                class="feedback-btn feedback-like"
+                type="button"
+              >
+                👍 Like
+              </button>
+              <button
+                id="feedbackDislikeBtn"
+                class="feedback-btn feedback-dislike"
+                type="button"
+              >
+                👎 Dislike
+              </button>
+              <button
+                id="feedbackQuestionBtn"
+                class="feedback-btn feedback-question"
+                type="button"
+              >
+                ❓ Question
+              </button>
+            </div>
+            <span id="feedbackStatus" class="feedback-status" aria-live="polite"></span>
+          </div>
+        </div>
+        <div class="output-block">
+          <div class="output-label">Plain tagged text</div>
+          <div
+            id="outputEditor"
+            class="editorOutput output-editor"
+            contenteditable="false"
+            aria-label="Tagged text output"
+          ></div>
+        </div>
+        <div class="output-block">
+          <div class="output-label">Visual preview (tags highlighted)</div>
+          <div
+            id="outputPreview"
+            class="editorOutput output-preview"
+            contenteditable="false"
+            aria-label="Tagged text visual preview"
+          ></div>
+        </div>
+        <p class="hint">
+          Each line keeps its original order. Tags are applied only when matching user‑defined meanings.
+        </p>
+      </section>
+    </main>
+
+    <div id="feedbackModal" class="feedback-modal" aria-hidden="true">
+      <div class="feedback-modal-backdrop"></div>
+      <div class="feedback-modal-content" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">
+        <h2 id="feedbackModalTitle" class="feedback-modal-title">Share feedback (optional email)</h2>
+        <p class="feedback-modal-description">
+          If you’d like to be contacted about this feedback, you can leave an email address. This is optional.
+        </p>
+        <form id="feedbackForm" class="feedback-form">
+          <input type="hidden" id="feedbackTypeField" />
+          <label class="feedback-input-label" for="feedbackEmailInput">
+            Email address (optional)
+          </label>
+          <input
+            id="feedbackEmailInput"
+            class="feedback-input"
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            placeholder="you@example.com"
+          />
+          <div class="feedback-modal-actions">
+            <button
+              type="button"
+              id="feedbackCancelBtn"
+              class="secondary-btn feedback-cancel-btn"
+            >
+              Skip
+            </button>
+            <button
+              type="submit"
+              class="primary-btn feedback-submit-btn"
+            >
+              Submit
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Firebase (for feedback storage) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+      // TODO: Replace this object with your Firebase web app config
+      // from Firebase console → Project settings → Your apps → Web app → Config.
+      window.FORMANTICS_FIREBASE_CONFIG = {
+        apiKey: "AIzaSyDmLz9MgPtzjg51nprVDmqJD0R9PadLWLo",
+        authDomain: "formantics-feedback.firebaseapp.com",
+        projectId: "formantics-feedback",
+        storageBucket: "formantics-feedback.firebasestorage.app",
+        messagingSenderId: "366267284351",
+        appId: "1:366267284351:web:d88c55c6a7e2b17456784a"
+      };
+
+      if (
+        window.FORMANTICS_FIREBASE_CONFIG &&
+        window.FORMANTICS_FIREBASE_CONFIG.projectId
+      ) {
+        firebase.initializeApp(window.FORMANTICS_FIREBASE_CONFIG);
+        window._formanticsDb = firebase.firestore();
+      }
+    </script>
+
+    <script src="app.js"></script>
+  </body>
+</html>
+
