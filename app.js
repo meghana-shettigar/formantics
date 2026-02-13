@@ -829,7 +829,7 @@ function sendFeedback(kind, email) {
     userAgent: navigator.userAgent || ""
   };
 
-  var db = window._formanticsDb;
+  var db = window._retainformatDb;
 
   // If Firebase is not configured, just log locally and show a friendly message.
   if (!db) {

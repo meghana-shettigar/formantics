@@ -3,34 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Formantics – Convert Formatting into AI‑Ready Semantic Tags</title>
+    <title>RetainFormat – Convert Formatting into AI‑Ready Semantic Tags</title>
     <meta
       name="description"
-      content="Formantics converts rich text formatting into explicit semantic tags that AI models understand. Paste from Word, Google Docs, or PDFs and generate AI‑ready tagged prompts without losing intent."
+      content="RetainFormat converts rich text formatting into explicit semantic tags that AI models understand. Paste from Word, Google Docs, or PDFs and generate AI‑ready tagged prompts without losing intent."
     />
-    <link rel="canonical" href="https://your-domain.com/formantics/" />
+    <link rel="canonical" href="https://www.retainformat.com/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta
       property="og:title"
-      content="Formantics – Formatting to Semantics for AI"
+      content="RetainFormat – Formatting to Semantics for AI"
     />
     <meta
       property="og:description"
-      content="Preserve bold, color, and headings as semantic tags for ChatGPT, Claude, and Gemini. Formantics turns your visual formatting into AI‑ready markup."
+      content="Preserve bold, color, and headings as semantic tags for ChatGPT, Claude, and Gemini. RetainFormat turns your visual formatting into AI‑ready markup."
     />
-    <meta property="og:url" content="https://your-domain.com/formantics/" />
+    <meta property="og:url" content="https://www.retainformat.com/" />
     <meta
       property="og:image"
-      content="https://your-domain.com/formantics/og-image.png"
+      content="https://www.retainformat.com/logo.png"
     />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="Formantics – Formatting to Semantics for AI"
+      content="RetainFormat – Formatting to Semantics for AI"
     />
     <meta
       name="twitter:description"
@@ -38,7 +38,7 @@
     />
     <meta
       name="twitter:image"
-      content="https://your-domain.com/formantics/og-image.png"
+      content="https://www.retainformat.com/logo.png"
     />
 
     <link rel="stylesheet" href="styles.css" />
@@ -46,7 +46,7 @@
   <body class="theme-light">
     <header class="app-header">
       <div class="app-header-main">
-        <h1 class="app-title">RetainFormat</h1>
+        <img src="assets/logo.png" alt="RetainFormat" class="app-logo" />
         <p class="app-subtitle">
           Retaining your visual format for AI to understand.
         </p>
@@ -73,7 +73,7 @@
       </div>
     </header>
 
-    <main class="app-main" aria-label="Formantics tool">
+    <main class="app-main" aria-label="RetainFormat tool">
       <section class="panel" aria-labelledby="input-section-title">
         <div class="panel-header">
           <h2 id="input-section-title">Input</h2>
@@ -147,7 +147,7 @@
             <span id="copyStatus" class="copy-status" aria-live="polite"></span>
           </div>
           <div class="feedback-bar">
-            <span class="feedback-label-inline">How is Formantics working for you?</span>
+            <span class="feedback-label-inline">How is RetainFormat working for you?</span>
             <div class="feedback-buttons">
               <button
                 id="feedbackLikeBtn"
@@ -243,7 +243,7 @@
     <script>
       // TODO: Replace this object with your Firebase web app config
       // from Firebase console → Project settings → Your apps → Web app → Config.
-      window.FORMANTICS_FIREBASE_CONFIG = {
+      window.RETAINFORMAT_FIREBASE_CONFIG = {
         apiKey: "AIzaSyDmLz9MgPtzjg51nprVDmqJD0R9PadLWLo",
         authDomain: "formantics-feedback.firebaseapp.com",
         projectId: "formantics-feedback",
@@ -253,11 +253,11 @@
       };
 
       if (
-        window.FORMANTICS_FIREBASE_CONFIG &&
-        window.FORMANTICS_FIREBASE_CONFIG.projectId
+        window.RETAINFORMAT_FIREBASE_CONFIG &&
+        window.RETAINFORMAT_FIREBASE_CONFIG.projectId
       ) {
-        firebase.initializeApp(window.FORMANTICS_FIREBASE_CONFIG);
-        window._formanticsDb = firebase.firestore();
+        firebase.initializeApp(window.RETAINFORMAT_FIREBASE_CONFIG);
+        window._retainformatDb = firebase.firestore();
       }
     </script>
 
