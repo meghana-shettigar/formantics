@@ -685,6 +685,7 @@ body.theme-dark .feedback-bar {
 body.theme-dark .feedback-btn {
   border-color: var(--color-border-subtle-dark);
   background: rgba(15, 23, 42, 0.9);
+  color: var(--color-text-muted-dark);
 }
 
 .feedback-btn:hover {
@@ -827,6 +828,15 @@ body.theme-dark .legal-notice {
 
 .legal-notice li:last-child {
   margin-bottom: 0;
+}
+
+body.theme-dark .legal-notice a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+body.theme-dark .legal-notice a:hover {
+  text-decoration: underline;
 }
 
 .app-credits {
