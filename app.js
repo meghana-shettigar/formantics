@@ -696,6 +696,7 @@ if (editor) {
 // Parse button
 if (parseBtn) {
   parseBtn.addEventListener("click", function () {
+    if (window._retainformatTrackEvent) window._retainformatTrackEvent("parse_formatting");
     detectFormatting();
   });
 }
@@ -703,6 +704,7 @@ if (parseBtn) {
 // Generate button
 if (generateBtn) {
   generateBtn.addEventListener("click", function () {
+    if (window._retainformatTrackEvent) window._retainformatTrackEvent("generate_text");
     generateTaggedOutput();
   });
 }
@@ -710,6 +712,7 @@ if (generateBtn) {
 // Copy output button - copies plain text with tags from output editor
 if (copyBtn) {
   copyBtn.addEventListener("click", function () {
+    if (window._retainformatTrackEvent) window._retainformatTrackEvent("copy_output");
     var plainText = outputEditor.textContent || "";
     if (!plainText) return;
 
@@ -878,6 +881,9 @@ function sendFeedback(kind, email) {
   db.collection("feedbackEvents")
     .add(payload)
     .then(function () {
+      if (window._retainformatTrackEvent) {
+        window._retainformatTrackEvent("feedback_" + kind, { email: email || "" });
+      }
       if (!feedbackStatus) return;
       feedbackStatus.textContent = "Thanks for your feedback.";
       setTimeout(function () {
@@ -930,4 +936,69 @@ if (feedbackForm) {
     sendFeedback(kind, email);
   });
 }
+
+// ——— Analytics (no change to tool logic) ———
+(function () {
+  var STORAGE_VISITOR = "retainformat_visitor_id";
+  var STORAGE_SESSION = "retainformat_session_id";
+
+  function randomId() {
+    var hex = "0123456789abcdef";
+    var s = "";
+    for (var i = 0; i < 16; i++) s += hex[Math.floor(Math.random() * 16)];
+    return s + Date.now().toString(36);
+  }
+
+  function getOrCreateVisitorId() {
+    try {
+      var id = localStorage.getItem(STORAGE_VISITOR);
+      if (id) return id;
+      id = randomId();
+      localStorage.setItem(STORAGE_VISITOR, id);
+      return id;
+    } catch (e) {
+      return randomId();
+    }
+  }
+
+  function getOrCreateSessionId() {
+    try {
+      var id = sessionStorage.getItem(STORAGE_SESSION);
+      if (id) return id;
+      id = randomId();
+      sessionStorage.setItem(STORAGE_SESSION, id);
+      return id;
+    } catch (e) {
+      return randomId();
+    }
+  }
+
+  function trackEvent(type, extra) {
+    extra = extra || {};
+    var db = window._retainformatDb;
+    if (!db) return;
+    var doc = {
+      type: type,
+      timestamp: new Date().toISOString(),
+      visitorId: getOrCreateVisitorId(),
+      sessionId: getOrCreateSessionId(),
+      userAgent: navigator.userAgent || ""
+    };
+    if (extra.email !== undefined) doc.email = extra.email;
+    db.collection("analytics_events").add(doc).catch(function (err) {
+      console.warn("Analytics event not saved:", err);
+    });
+  }
+
+  window._retainformatTrackEvent = trackEvent;
+
+  // Record page view on load
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      trackEvent("page_view");
+    });
+  } else {
+    trackEvent("page_view");
+  }
+})();
 

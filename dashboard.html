@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RetainFormat – Analytics Dashboard</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 24px;
+        background: #0f111a;
+        color: #e2e8f0;
+        min-height: 100vh;
+      }
+      .container { max-width: 900px; margin: 0 auto; }
+      h1 { font-size: 1.5rem; margin: 0 0 24px 0; color: #f5f5ff; }
+      .login-box {
+        background: #1a1f2e;
+        padding: 32px;
+        border-radius: 12px;
+        max-width: 360px;
+        margin: 80px auto 0;
+      }
+      .login-box h2 { margin: 0 0 16px 0; font-size: 1.25rem; }
+      .login-box input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        background: #0f111a;
+        color: #e2e8f0;
+        font-size: 1rem;
+        margin-bottom: 16px;
+      }
+      .login-box button {
+        width: 100%;
+        padding: 12px;
+        background: #4f46e5;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      .login-box button:hover { background: #4338ca; }
+      .login-error { color: #f87171; font-size: 14px; margin-top: 8px; }
+      .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .dashboard-header a {
+        color: #94a3b8;
+        text-decoration: none;
+        font-size: 14px;
+      }
+      .dashboard-header a:hover { color: #cbd5e1; }
+      .card {
+        background: #1a1f2e;
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 16px;
+      }
+      .card h3 {
+        margin: 0 0 16px 0;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 16px;
+      }
+      .stat {
+        background: #0f111a;
+        padding: 16px;
+        border-radius: 8px;
+      }
+      .stat-value { font-size: 1.75rem; font-weight: 700; color: #f5f5ff; }
+      .stat-label { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+      .hidden { display: none !important; }
+      .loading { color: #94a3b8; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="loginScreen" class="login-box">
+        <h2>Dashboard login</h2>
+        <input type="password" id="dashboardPassword" placeholder="Password" autocomplete="off" />
+        <button type="button" id="loginBtn">Enter</button>
+        <p id="loginError" class="login-error hidden"></p>
+      </div>
+
+      <div id="dashboardScreen" class="hidden">
+        <div class="dashboard-header">
+          <h1>RetainFormat analytics</h1>
+          <a href="index.html">← Back to app</a>
+        </div>
+
+        <div id="dashboardLoading" class="loading">Loading analytics…</div>
+        <div id="dashboardContent" class="hidden">
+          <div class="card">
+            <h3>Traffic</h3>
+            <div class="stat-grid">
+              <div class="stat">
+                <div class="stat-value" id="statLandings">0</div>
+                <div class="stat-label">Total landings (page views)</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statUniqueVisitors">0</div>
+                <div class="stat-label">Unique visitors (browsers)</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statSessions">0</div>
+                <div class="stat-label">Sessions (opens)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Button clicks</h3>
+            <div class="stat-grid">
+              <div class="stat">
+                <div class="stat-value" id="statParse">0</div>
+                <div class="stat-label">Parse formatting</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statGenerate">0</div>
+                <div class="stat-label">Generate text</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statCopy">0</div>
+                <div class="stat-label">Copy output</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Feedback</h3>
+            <div class="stat-grid">
+              <div class="stat">
+                <div class="stat-value" id="statLike">0</div>
+                <div class="stat-label">Like</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statDislike">0</div>
+                <div class="stat-label">Dislike</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statQuestion">0</div>
+                <div class="stat-label">Question</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="statFeedbackWithEmail">0</div>
+                <div class="stat-label">Feedback with email</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+      window.RETAINFORMAT_FIREBASE_CONFIG = {
+        apiKey: "AIzaSyDmLz9MgPtzjg51nprVDmqJD0R9PadLWLo",
+        authDomain: "formantics-feedback.firebaseapp.com",
+        projectId: "formantics-feedback",
+        storageBucket: "formantics-feedback.firebasestorage.app",
+        messagingSenderId: "366267284351",
+        appId: "1:366267284351:web:d88c55c6a7e2b17456784a"
+      };
+      if (window.RETAINFORMAT_FIREBASE_CONFIG && window.RETAINFORMAT_FIREBASE_CONFIG.projectId) {
+        firebase.initializeApp(window.RETAINFORMAT_FIREBASE_CONFIG);
+        window._retainformatDb = firebase.firestore();
+      }
+
+      var DASHBOARD_AUTH_KEY = "retainformat_dashboard_auth";
+      var EXPECTED_PASSWORD = "chicken";
+
+      var loginScreen = document.getElementById("loginScreen");
+      var dashboardScreen = document.getElementById("dashboardScreen");
+      var dashboardPassword = document.getElementById("dashboardPassword");
+      var loginBtn = document.getElementById("loginBtn");
+      var loginError = document.getElementById("loginError");
+      var dashboardLoading = document.getElementById("dashboardLoading");
+      var dashboardContent = document.getElementById("dashboardContent");
+
+      function showLogin() {
+        loginScreen.classList.remove("hidden");
+        dashboardScreen.classList.add("hidden");
+      }
+
+      function showDashboard() {
+        loginScreen.classList.add("hidden");
+        dashboardScreen.classList.remove("hidden");
+        loadAnalytics();
+      }
+
+      function checkAuth() {
+        try {
+          if (sessionStorage.getItem(DASHBOARD_AUTH_KEY) === "1") {
+            showDashboard();
+            return;
+          }
+        } catch (e) {}
+        showLogin();
+      }
+
+      loginBtn.addEventListener("click", function () {
+        var pwd = (dashboardPassword.value || "").trim();
+        loginError.classList.add("hidden");
+        if (pwd === EXPECTED_PASSWORD) {
+          try {
+            sessionStorage.setItem(DASHBOARD_AUTH_KEY, "1");
+          } catch (e) {}
+          showDashboard();
+        } else {
+          loginError.textContent = "Wrong password.";
+          loginError.classList.remove("hidden");
+        }
+      });
+
+      dashboardPassword.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") loginBtn.click();
+      });
+
+      function setEl(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function loadAnalytics() {
+        var db = window._retainformatDb;
+        if (!db) {
+          dashboardLoading.textContent = "Firebase not configured.";
+          return;
+        }
+
+        dashboardLoading.classList.remove("hidden");
+        dashboardContent.classList.add("hidden");
+
+        db.collection("analytics_events")
+          .get()
+          .then(function (snapshot) {
+            var events = [];
+            snapshot.forEach(function (doc) {
+              var d = doc.data();
+              d.id = doc.id;
+              events.push(d);
+            });
+
+            var pageViews = 0;
+            var visitorIds = {};
+            var sessionIds = {};
+            var parseClicks = 0, generateClicks = 0, copyClicks = 0;
+            var likeCount = 0, dislikeCount = 0, questionCount = 0;
+            var feedbackWithEmail = 0;
+
+            events.forEach(function (e) {
+              var t = e.type || "";
+              if (t === "page_view") {
+                pageViews++;
+                if (e.visitorId) visitorIds[e.visitorId] = true;
+                if (e.sessionId) sessionIds[e.sessionId] = true;
+              }
+              if (t === "parse_formatting") parseClicks++;
+              if (t === "generate_text") generateClicks++;
+              if (t === "copy_output") copyClicks++;
+              if (t === "feedback_like") likeCount++;
+              if (t === "feedback_dislike") dislikeCount++;
+              if (t === "feedback_question") questionCount++;
+              if (t.indexOf("feedback_") === 0 && e.email && String(e.email).trim()) feedbackWithEmail++;
+            });
+
+            setEl("statLandings", pageViews);
+            setEl("statUniqueVisitors", Object.keys(visitorIds).length);
+            setEl("statSessions", Object.keys(sessionIds).length);
+            setEl("statParse", parseClicks);
+            setEl("statGenerate", generateClicks);
+            setEl("statCopy", copyClicks);
+            setEl("statLike", likeCount);
+            setEl("statDislike", dislikeCount);
+            setEl("statQuestion", questionCount);
+            setEl("statFeedbackWithEmail", feedbackWithEmail);
+
+            dashboardLoading.classList.add("hidden");
+            dashboardContent.classList.remove("hidden");
+          })
+          .catch(function (err) {
+            dashboardLoading.textContent = "Could not load data: " + (err.message || "error");
+            console.error(err);
+          });
+      }
+
+      checkAuth();
+    </script>
+  </body>
+</html>
