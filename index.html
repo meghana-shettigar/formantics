@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Preserve Formatting When Pasting Into AI & ChatGPT</title>
+    <title>RetainFormat – Convert Your Formatting into AI‑Ready Tags</title>
     <meta
       name="description"
-      content="RetainFormat converts bold, highlighted, and structured formatting into AI-friendly text so you preserve meaning when pasting into ChatGPT or other tools."
+      content="Convert text with formatting into tags that AI models understand. Paste from Word, Google Docs, or PDFs and generate AI‑ready tagged prompts without losing intent."
     />
     <link rel="canonical" href="https://www.retainformat.com/" />
     <link rel="icon" type="image/png" href="/favicon.png">
@@ -43,14 +43,49 @@
     />
 
     <link rel="stylesheet" href="styles.css" />
+
+    <!-- Structured data for rich snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "name": "RetainFormat",
+          "url": "https://www.retainformat.com/",
+          "description": "RetainFormat converts rich text formatting into semantic tags that AI models understand. Preserve bold, colors, and headings when pasting into ChatGPT, Claude, and Gemini."
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "RetainFormat",
+          "applicationCategory": "WebApplication",
+          "operatingSystem": "Any",
+          "url": "https://www.retainformat.com/",
+          "description": "Convert formatting from Word, Google Docs, or PDF into AI-ready tagged text. Fix ChatGPT losing formatting by turning bold, color, and headings into explicit tags.",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+        }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Why does ChatGPT remove my formatting?", "acceptedAnswer": { "@type": "Answer", "text": "ChatGPT and most AI chat interfaces accept plain text only. Bold, colors, and headings are stripped. RetainFormat converts them into explicit tags (e.g. Answer, Question) so the AI keeps your structure." } },
+        { "@type": "Question", "name": "How do I keep bold and colors when pasting into AI?", "acceptedAnswer": { "@type": "Answer", "text": "Paste your text here, click Parse formatting, assign a meaning to each style (e.g. bold = Question), then Generate text and copy. Paste that tagged output into ChatGPT, Claude, or Gemini." } },
+        { "@type": "Question", "name": "Can I use this with text from Word or Google Docs?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Paste from Word, Docs, PDF, or email. RetainFormat detects bold, italic, colors, and alignment and turns them into semantic tags for AI." } },
+        { "@type": "Question", "name": "Is RetainFormat free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Use it in your browser with no sign-up." } },
+        { "@type": "Question", "name": "How do I report a bug?", "acceptedAnswer": { "@type": "Answer", "text": "Please report bugs via GitHub issues (see the FAQ on our website for the link). We'll look into it as soon as we can." } }
+      ]
+    }
+    </script>
   </head>
   <body class="theme-light">
     <header class="app-header">
       <div class="app-header-main">
         <img src="assets/logo.png" alt="RetainFormat" class="app-logo" />
-        <p class="app-subtitle">
-          Retaining your visual format for AI to understand.
-        </p>
+        <h1 class="app-title">Preserve formatting when pasting into ChatGPT &amp; AI tools</h1>
         <div class="help-tooltip-wrap">
           <button
             id="helpTooltipBtn"
@@ -103,11 +138,14 @@
     </header>
 
     <main class="app-main" aria-label="RetainFormat tool">
+      <p class="seo-intro">
+        <strong>Don't want AI to lose your formatting?</strong> RetainFormat will help you keep your structure.
+      </p>
       <section class="panel" aria-labelledby="input-section-title">
         <div class="panel-header">
-          <h2 id="input-section-title">Input</h2>
+          <h2 id="input-section-title">Paste your formatted text</h2>
           <p class="panel-description">
-            Paste your text here. Keep any formatting you use (bold, colors, headings) — we’ll use it in the next step.
+            Paste from Word, Google Docs, or PDF. Keep bold, colors, and headings — we’ll convert them into semantic tags for AI.
           </p>
         </div>
         <div
@@ -134,9 +172,9 @@
 
       <section class="panel" aria-labelledby="detected-section-title">
         <div class="panel-header">
-          <h2 id="detected-section-title">Detected formatting</h2>
+          <h2 id="detected-section-title">Assign meaning to each format</h2>
           <p class="panel-description">
-            Tell us what each format means (e.g. red = Answer, bold = Question). Only formats found in your text are listed.
+            Map each style to a meaning (e.g. red = Answer, bold = Question). Only formats in your text are listed.
           </p>
         </div>
         <div id="detectedFormattingContainer" class="detected-list empty-state">
@@ -158,9 +196,9 @@
 
       <section class="panel" aria-labelledby="output-section-title">
         <div class="panel-header">
-          <h2 id="output-section-title">Output</h2>
+          <h2 id="output-section-title">Copy AI-ready tagged output</h2>
           <p class="panel-description">
-            Your text with clear tags for each meaning. Copy and paste this into ChatGPT, Claude, Gemini, or any AI tool.
+            Plain text with semantic tags. Copy and paste into ChatGPT, Claude, Gemini, or any AI — formatting intent is preserved.
           </p>
         </div>
         <div class="output-controls">
@@ -228,15 +266,33 @@
     </main>
 
     <footer class="app-footer">
+      <section class="faq-section" aria-labelledby="faq-heading">
+        <details class="faq-details">
+          <summary id="faq-heading" class="faq-summary">Frequently asked questions</summary>
+          <dl class="faq-list">
+            <dt>Why does ChatGPT remove my formatting?</dt>
+            <dd>ChatGPT and most AI chat interfaces accept plain text only. Bold, colors, and headings are stripped. RetainFormat converts them into explicit tags (e.g. &lt;Answer&gt;, &lt;Question&gt;) so the AI keeps your structure.</dd>
+            <dt>How do I keep bold and colors when pasting into AI?</dt>
+            <dd>Paste your text here, click Parse formatting, assign a meaning to each style (e.g. bold = Question), then Generate text and copy. Paste that tagged output into ChatGPT, Claude, or Gemini.</dd>
+            <dt>Can I use this with text from Word or Google Docs?</dt>
+            <dd>Yes. Paste from Word, Docs, PDF, or email. RetainFormat detects bold, italic, colors, and alignment and turns them into semantic tags for AI.</dd>
+            <dt>Is RetainFormat free?</dt>
+            <dd>Yes. Use it in your browser with no sign-up.</dd>
+            <dt>How do I report a bug?</dt>
+            <dd>Please report bugs via <a href="https://github.com/meghana-shettigar/formantics/issues/new/" target="_blank" rel="noopener noreferrer">GitHub issues</a>. We’ll look into it as soon as we can.</dd>
+          </dl>
+        </details>
+      </section>
       <div class="legal-notice">
         <p><strong>Disclaimer</strong></p>
         <ul>
           <li>You are responsible for the content you paste and how you use it in any AI model or any other tool. RetainFormat does not take responsibility for that content or its use.</li>
-          <li>Please review the generated text before pasting it into an AI tool or any other tool. We do not guarantee accuracy. If you find a bug, please report it (e.g. via  <a href="https://github.com/meghana-shettigar/formantics/issues/new/" target="_blank" rel="noopener noreferrer">GitHub issues</a>).</li>
+          <li>Please review the generated text before pasting it into an AI tool or any other tool. We do not guarantee accuracy.</li>
         </ul>
       </div>
       <p class="app-credits">
-        © 2026 RetainFormat. All rights reserved. Created by <a href="https://www.linkedin.com/in/meghana-shettigar-a53296134/" target="_blank" rel="noopener noreferrer">Meghana Shettigar</a>. 
+        © 2026 RetainFormat. All rights reserved. Created by <a href="https://www.linkedin.com/in/meghana-shettigar-a53296134/" target="_blank" rel="noopener noreferrer">Meghana Shettigar</a>.
+        <span class="credits-links">Read more: <a href="https://medium.com/@vaada2023/why-ai-tools-lose-text-formatting-and-how-to-fix-it-050bb7bd53d0" target="_blank" rel="noopener noreferrer">Why AI Tools Lose Text Formatting — And How to Fix It</a>, <a href="https://medium.com/@meghana.shettigar/how-to-preserve-formatting-when-using-ai-tools-72d3c7776361" target="_blank" rel="noopener noreferrer">How to Preserve Formatting When Using AI Tools Like ChatGPT</a>.</span>
       </p>
     </footer>
 
