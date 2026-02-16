@@ -1,6 +1,6 @@
-#<img width="2048" height="1536" alt="favicon" src="https://github.com/user-attachments/assets/32fe5753-00c3-4d19-86c7-63a5a08ffbaf" />
+<img width="204" height="153" alt="favicon" src="https://github.com/user-attachments/assets/32fe5753-00c3-4d19-86c7-63a5a08ffbaf" />
  
-RetainFormat – Formatting to Semantics for AI
+#RetainFormat – Formatting to Semantics for AI
 
 RetainFormat is a web app that **converts visual formatting into explicit semantic tags that AI models can understand**. Paste rich text from Word, Google Docs, PDFs, email, or the web and RetainFormat preserves your formatting, lets you assign semantic meanings, and generates **AI‑ready tagged text** without changing the original order.
 
