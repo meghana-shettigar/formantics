@@ -521,22 +521,51 @@ body.theme-dark .editorOutput:empty::before {
     font-size: 16px;
   }
 
-  /* Header / nav adjustments */
+  /* Header: keep logo + menu on first line; move help + theme toggle to second line */
   .nav-inner {
     flex-wrap: wrap;
     padding: 12px 16px;
-    gap: 12px;
+    gap: 8px 12px;
   }
 
-  .app-logo {
-    max-width: 80px;
+  .nav-logo-link {
     flex-shrink: 0;
   }
 
+  .app-logo {
+    max-width: 72px;
+    height: auto;
+  }
+
   .nav-links {
-    order: 3;
+    order: 0;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .nav-link {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .nav-right {
+    order: 1;
+    flex-basis: 100%;
     width: 100%;
-    justify-content: flex-start;
+    justify-content: flex-end;
+    padding-top: 4px;
+    border-top: 1px solid var(--color-border-subtle-light);
+  }
+
+  body.theme-dark .nav-right {
+    border-top-color: var(--color-border-subtle-dark);
+  }
+
+  .help-tooltip-wrap {
+    flex-shrink: 0;
   }
 
   .hero {
