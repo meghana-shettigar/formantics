@@ -22,8 +22,31 @@ var feedbackCancelBtn = document.getElementById("feedbackCancelBtn");
 var feedbackStatus = document.getElementById("feedbackStatus");
 
 // State for detected formats and user-defined meanings
-// Each entry: { id, kind, key, displayName, previewStyle, userLabel }
+// Each entry: { id, kind, key, displayName, userLabel, priority, layer }
 var detectedFormats = [];
+
+// Format priority for ordering when multiple formats apply (lower number = higher priority)
+// Structural (Lists, headings, tables, sections) = highest; Semantic emphasis (Bold, highlight) = medium; Visual (Font, color, underline) = lowest
+var FORMAT_LAYERS = {
+  structural: 0,   // Highest: lists, headings, tables, sections
+  semantic: 1,     // Medium: bold, highlight, italic
+  visual: 2        // Lowest: font, color, underline, alignment
+};
+function getFormatPriority(kind) {
+  var structural = ["bullet", "heading", "table", "section"];
+  var semantic = ["bold", "highlight", "italic"];
+  var visual = ["color", "underline", "alignment"];
+  if (structural.indexOf(kind) !== -1) return FORMAT_LAYERS.structural;
+  if (semantic.indexOf(kind) !== -1) return FORMAT_LAYERS.semantic;
+  if (visual.indexOf(kind) !== -1) return FORMAT_LAYERS.visual;
+  return FORMAT_LAYERS.visual;
+}
+function getFormatLayerName(kind) {
+  var p = getFormatPriority(kind);
+  if (p === FORMAT_LAYERS.structural) return "structural";
+  if (p === FORMAT_LAYERS.semantic) return "semantic";
+  return "visual";
+}
 var editorDefaultColor = null;
 var editorDefaultTextAlign = null;
 var editorDefaultWeight = null;
@@ -107,7 +130,98 @@ function setTheme(theme) {
   editorDefaultTextAlign = null;
 }
 
-// Formatting detection
+// ——— Format detection: one function per format (same logic as before) ———
+
+/** Detects bold (B/STRONG or font-weight >= 600). */
+function detectBold(el, tag, style, found) {
+  if (tag === "B" || tag === "STRONG") {
+    found.bold = true;
+    return;
+  }
+  var weightStr = style.fontWeight;
+  var weightNum = parseInt(weightStr, 10);
+  var defaultNum =
+    typeof editorDefaultWeight === "number"
+      ? editorDefaultWeight
+      : parseInt(editorDefaultWeight, 10);
+  if (
+    !isNaN(weightNum) &&
+    weightNum >= 600 &&
+    (!defaultNum || weightNum > defaultNum)
+  ) {
+    found.bold = true;
+  }
+}
+
+/** Detects italic (I/EM or font-style italic/oblique). */
+function detectItalic(el, tag, style, found) {
+  if (tag === "I" || tag === "EM" || style.fontStyle === "italic" || style.fontStyle === "oblique") {
+    found.italic = true;
+  }
+}
+
+/** Detects underline (text-decoration). */
+function detectUnderline(el, tag, style, found) {
+  var textDecoration = style.textDecorationLine || style.textDecoration;
+  if (textDecoration && textDecoration.indexOf("underline") !== -1) {
+    found.underline = true;
+  }
+}
+
+/** Detects heading levels (H1–H6). */
+function detectHeadings(el, tag, style, found) {
+  if (tag === "H1" || tag === "H2" || tag === "H3" || tag === "H4" || tag === "H5" || tag === "H6") {
+    found.headings[tag] = true;
+  }
+}
+
+/** Detects font color (non-default text color). */
+function detectFontColor(el, tag, style, found) {
+  var color = style.color;
+  if (color && color !== editorDefaultColor && color !== "rgb(0, 0, 0)") {
+    found.colors[color] = true;
+  }
+}
+
+/** Detects highlights (background color, e.g. Word/Docs highlighter). */
+function detectHighlights(el, tag, style, found) {
+  var bg = style.backgroundColor;
+  if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
+    found.highlights[bg] = true;
+  }
+}
+
+/** Detects text alignment on block-level elements. */
+function detectAlignment(el, tag, style, found) {
+  var alignValue = style.textAlign;
+  if (alignValue && alignValue !== editorDefaultTextAlign) {
+    found.alignments[alignValue] = true;
+  }
+}
+
+/** Count how many UL/OL ancestors an element has (list nesting depth). Stop when we hit the editor. */
+function getListDepth(node) {
+  var d = 0;
+  var p = node && node.parentElement;
+  while (p && p !== editor) {
+    if (p.tagName === "UL" || p.tagName === "OL") d++;
+    p = p.parentElement;
+  }
+  return d;
+}
+
+/** Detects list-style-type on list items. Key = listStyleType + "_L" + getListDepth(el) so depth 1 = top-level, 2 = nested. */
+function detectBullets(el, tag, style, found) {
+  if (tag !== "LI") return;
+  var listStyleType = (style.listStyleType || "").trim().toLowerCase();
+  if (!listStyleType || listStyleType === "none") listStyleType = "disc";
+  if (!found.bullets) found.bullets = {};
+  var depth = getListDepth(el);
+  var key = listStyleType + "_L" + depth;
+  found.bullets[key] = true;
+}
+
+// Main formatting detection: walks editor and calls each detector.
 function detectFormatting() {
   ensureEditorDefaults();
 
@@ -115,10 +229,10 @@ function detectFormatting() {
     bold: false,
     italic: false,
     underline: false,
-    headings: {}, // level -> true
-    colors: {}, // colorString -> true
-    highlights: {}, // backgroundColor string -> true (text highlight)
-    alignments: {} // alignString -> true
+    headings: {},
+    colors: {},
+    highlights: {},
+    alignments: {}
   };
 
   var walker = document.createTreeWalker(
@@ -127,7 +241,6 @@ function detectFormatting() {
     null
   );
 
-  // Include editor itself for alignment detection
   var rootElements = [editor];
   while (walker.nextNode()) {
     rootElements.push(walker.currentNode);
@@ -136,70 +249,22 @@ function detectFormatting() {
   for (var i = 0; i < rootElements.length; i++) {
     var el = rootElements[i];
     if (el === editor) {
-      // only alignment on editor is meaningful if user changed it
       var editorStyle = window.getComputedStyle(editor);
-      var align = editorStyle.textAlign;
-      if (align && align !== editorDefaultTextAlign) {
-        found.alignments[align] = true;
-      }
+      detectAlignment(el, "DIV", editorStyle, found);
       continue;
     }
 
     var tag = el.tagName;
     var style = window.getComputedStyle(el);
 
-    // Bold
-    if (tag === "B" || tag === "STRONG") {
-      found.bold = true;
-    } else {
-      var weightStr = style.fontWeight;
-      var weightNum = parseInt(weightStr, 10);
-      var defaultNum =
-        typeof editorDefaultWeight === "number"
-          ? editorDefaultWeight
-          : parseInt(editorDefaultWeight, 10);
-      if (
-        !isNaN(weightNum) &&
-        weightNum >= 600 &&
-        (!defaultNum || weightNum > defaultNum)
-      ) {
-        found.bold = true;
-      }
-    }
-
-    // Italic
-    if (tag === "I" || tag === "EM" || style.fontStyle === "italic" || style.fontStyle === "oblique") {
-      found.italic = true;
-    }
-
-    // Underline
-    var textDecoration = style.textDecorationLine || style.textDecoration;
-    if (textDecoration && textDecoration.indexOf("underline") !== -1) {
-      found.underline = true;
-    }
-
-    // Headings
-    if (tag === "H1" || tag === "H2" || tag === "H3" || tag === "H4" || tag === "H5" || tag === "H6") {
-      found.headings[tag] = true;
-    }
-
-    // Colors
-    var color = style.color;
-    if (color && color !== editorDefaultColor && color !== "rgb(0, 0, 0)") {
-      found.colors[color] = true;
-    }
-
-    // Highlights (background color, e.g. from Word/Docs highlighter)
-    var bg = style.backgroundColor;
-    if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
-      found.highlights[bg] = true;
-    }
-
-    // Alignment on block-level elements
-    var alignValue = style.textAlign;
-    if (alignValue && alignValue !== editorDefaultTextAlign) {
-      found.alignments[alignValue] = true;
-    }
+    detectBold(el, tag, style, found);
+    detectItalic(el, tag, style, found);
+    detectUnderline(el, tag, style, found);
+    detectHeadings(el, tag, style, found);
+    detectFontColor(el, tag, style, found);
+    detectHighlights(el, tag, style, found);
+    detectAlignment(el, tag, style, found);
+    detectBullets(el, tag, style, found);
   }
 
   buildDetectedFormattingUI(found);
@@ -227,7 +292,14 @@ function buildDetectedFormattingUI(found) {
 
     var labelEl = document.createElement("div");
     labelEl.className = "detected-label";
-    labelEl.textContent = label;
+    var layerName = getFormatLayerName(kind);
+    var layerLabel = layerName === "structural" ? "Structural" : layerName === "semantic" ? "Semantic" : "Visual";
+    var layerHint = document.createElement("span");
+    layerHint.className = "detected-layer detected-layer-" + layerName;
+    layerHint.setAttribute("title", layerName === "structural" ? "Highest priority" : layerName === "semantic" ? "Medium priority" : "Lowest priority");
+    layerHint.textContent = layerLabel;
+    labelEl.appendChild(document.createTextNode(label + " "));
+    labelEl.appendChild(layerHint);
 
     var preview = document.createElement("div");
     preview.className = "detected-preview";
@@ -261,7 +333,9 @@ function buildDetectedFormattingUI(found) {
       kind: kind,
       key: key,
       displayName: label,
-      userLabel: ""
+      userLabel: "",
+      priority: getFormatPriority(kind),
+      layer: getFormatLayerName(kind)
     };
     detectedFormats.push(formatEntry);
 
@@ -271,8 +345,9 @@ function buildDetectedFormattingUI(found) {
     });
   }
 
-  // Bold
-  if (found.bold) {
+  /** UI for Bold format. */
+  function addBoldFormatUI() {
+    if (!found.bold) return;
     addFormat("bold", "bold", "Bold", function (preview) {
       var span = document.createElement("span");
       span.style.fontWeight = "700";
@@ -281,8 +356,9 @@ function buildDetectedFormattingUI(found) {
     });
   }
 
-  // Italic
-  if (found.italic) {
+  /** UI for Italic format. */
+  function addItalicFormatUI() {
+    if (!found.italic) return;
     addFormat("italic", "italic", "Italic", function (preview) {
       var span = document.createElement("span");
       span.style.fontStyle = "italic";
@@ -291,8 +367,9 @@ function buildDetectedFormattingUI(found) {
     });
   }
 
-  // Underline
-  if (found.underline) {
+  /** UI for Underline format. */
+  function addUnderlineFormatUI() {
+    if (!found.underline) return;
     addFormat("underline", "underline", "Underline", function (preview) {
       var span = document.createElement("span");
       span.style.textDecoration = "underline";
@@ -301,31 +378,34 @@ function buildDetectedFormattingUI(found) {
     });
   }
 
-  // Headings
-  var levels = ["H1", "H2", "H3", "H4", "H5", "H6"];
-  for (var i = 0; i < levels.length; i++) {
-    var level = levels[i];
-    if (found.headings[level]) {
-      (function (lvl) {
-        addFormat(
-          "heading",
-          lvl,
-          lvl + " heading",
-          function (preview) {
-            var span = document.createElement("span");
-            span.style.fontWeight = "600";
-            span.style.fontSize = "0.95rem";
-            span.textContent = lvl + " preview";
-            preview.appendChild(span);
-          }
-        );
-      })(level);
+  /** UI for Heading formats (H1–H6). */
+  function addHeadingsFormatUI() {
+    var levels = ["H1", "H2", "H3", "H4", "H5", "H6"];
+    for (var i = 0; i < levels.length; i++) {
+      var level = levels[i];
+      if (found.headings[level]) {
+        (function (lvl) {
+          addFormat(
+            "heading",
+            lvl,
+            lvl + " heading",
+            function (preview) {
+              var span = document.createElement("span");
+              span.style.fontWeight = "600";
+              span.style.fontSize = "0.95rem";
+              span.textContent = lvl + " preview";
+              preview.appendChild(span);
+            }
+          );
+        })(level);
+      }
     }
   }
 
-  // Colors
-  for (var color in found.colors) {
-    if (Object.prototype.hasOwnProperty.call(found.colors, color)) {
+  /** UI for Font color formats. */
+  function addColorFormatsUI() {
+    for (var color in found.colors) {
+      if (Object.prototype.hasOwnProperty.call(found.colors, color)) {
       (function (c) {
         addFormat("color", c, "Color", function (preview) {
           var swatch = document.createElement("span");
@@ -334,13 +414,15 @@ function buildDetectedFormattingUI(found) {
 
           preview.appendChild(swatch);
         });
-      })(color);
+        })(color);
+      }
     }
   }
 
-  // Highlights (background color)
-  for (var bg in found.highlights) {
-    if (Object.prototype.hasOwnProperty.call(found.highlights, bg)) {
+  /** UI for Highlight (background color) formats. */
+  function addHighlightFormatsUI() {
+    for (var bg in found.highlights) {
+      if (Object.prototype.hasOwnProperty.call(found.highlights, bg)) {
       (function (b) {
         addFormat("highlight", b, "Highlight", function (preview) {
           var span = document.createElement("span");
@@ -353,10 +435,12 @@ function buildDetectedFormattingUI(found) {
       })(bg);
     }
   }
+  }
 
-  // Alignments
-  for (var align in found.alignments) {
-    if (Object.prototype.hasOwnProperty.call(found.alignments, align)) {
+  /** UI for Alignment formats. */
+  function addAlignmentFormatsUI() {
+    for (var align in found.alignments) {
+      if (Object.prototype.hasOwnProperty.call(found.alignments, align)) {
       (function (a) {
         addFormat("alignment", a, "Alignment: " + a, function (preview) {
           var span = document.createElement("span");
@@ -369,13 +453,90 @@ function buildDetectedFormattingUI(found) {
       })(align);
     }
   }
+  }
+
+  /** Map list-style-type to display character for bullet UI. */
+  var BULLET_DISPLAY = {
+    disc: "•",
+    circle: "◦",
+    round: "◦",
+    square: "▪",
+    decimal: "1.",
+    "decimal-leading-zero": "01.",
+    "lower-alpha": "a.",
+    "upper-alpha": "A.",
+    "lower-roman": "i.",
+    "upper-roman": "I."
+  };
+
+  /** Human-readable names for list-style-type (for accessibility and visibility). */
+  var BULLET_LABELS = {
+    disc: "filled round •",
+    circle: "hollow round ◦",
+    round: "hollow round ◦",
+    square: "square ▪",
+    decimal: "numbered 1.",
+    "decimal-leading-zero": "01.",
+    "lower-alpha": "a.",
+    "upper-alpha": "A.",
+    "lower-roman": "i.",
+    "upper-roman": "I."
+  };
+
+  /** UI for Bullet/list formats. Key may be "disc_L1" (depth) so top-level and nested are separate. */
+  function addBulletFormatsUI() {
+    if (!found.bullets) return;
+    console.log("[RetainFormat] Detected bullet keys (Parse):", Object.keys(found.bullets));
+    for (var fullKey in found.bullets) {
+      if (!Object.prototype.hasOwnProperty.call(found.bullets, fullKey)) continue;
+      (function (key) {
+        var baseKey = key.replace(/_L\d+$/, "");
+        var depthMatch = key.match(/_L(\d+)$/);
+        var depth = depthMatch ? parseInt(depthMatch[1], 10) : 0;
+        var displayChar = BULLET_DISPLAY[baseKey] != null ? BULLET_DISPLAY[baseKey] : baseKey;
+        var shortLabel = BULLET_LABELS[baseKey] != null ? BULLET_LABELS[baseKey] : baseKey;
+        var levelHint = depth <= 1 ? " (top level)" : " (nested)";
+        var label = "Bullet: " + shortLabel + levelHint;
+        addFormat("bullet", key, label, function (preview) {
+          var wrap = document.createElement("span");
+          wrap.style.display = "inline-flex";
+          wrap.style.alignItems = "center";
+          wrap.style.gap = "6px";
+          var bulletSpan = document.createElement("span");
+          bulletSpan.style.fontSize = "1.75em";
+          bulletSpan.style.lineHeight = "1";
+          bulletSpan.style.minWidth = "1.2em";
+          bulletSpan.textContent = displayChar;
+          bulletSpan.setAttribute("aria-hidden", "true");
+          wrap.appendChild(bulletSpan);
+          var textSpan = document.createElement("span");
+          textSpan.textContent = " " + shortLabel + levelHint;
+          textSpan.setAttribute("aria-hidden", "true");
+          console.log("textSpan megha1", textSpan);
+          console.log("wrap megha2", wrap);
+          wrap.appendChild(textSpan);
+          console.log("preview megha3", preview);
+          preview.appendChild(wrap);
+        });
+      })(fullKey);
+    }
+  }
+
+  addBoldFormatUI();
+  addItalicFormatUI();
+  addUnderlineFormatUI();
+  addHeadingsFormatUI();
+  addColorFormatsUI();
+  addHighlightFormatsUI();
+  addAlignmentFormatsUI();
+  addBulletFormatsUI();
 
   if (!anyDetected) {
     detectedFormattingContainer.classList.add("empty-state");
     var msg = document.createElement("p");
     msg.className = "empty-message";
     msg.textContent =
-      "No special formatting detected. Try adding bold, color, headings, or alignment.";
+      "No special formatting detected. Try adding bold, color, headings, bullets, or alignment.";
     detectedFormattingContainer.appendChild(msg);
   }
 
@@ -394,6 +555,10 @@ function generateTaggedOutput() {
 
   var activeFormats = detectedFormats.filter(function (f) {
     return f.userLabel && f.userLabel.trim().length > 0;
+  });
+  // Apply priority: structural first, then semantic, then visual (so tags open/close in layer order)
+  activeFormats = activeFormats.slice().sort(function (a, b) {
+    return (a.priority || FORMAT_LAYERS.visual) - (b.priority || FORMAT_LAYERS.visual);
   });
 
   if (activeFormats.length === 0) {
@@ -454,6 +619,155 @@ function buildSegmentedText(activeFormats) {
   var nodes = [];
   var labelsPerIndex = [];
 
+  // ——— DEBUG: bullet / list state ———
+  (function debugBullets() {
+    console.group("[RetainFormat] Bullet / list debug");
+    console.log("activeFormats (bullet only):", activeFormats.filter(function (f) { return f.kind === "bullet"; }).map(function (f) { return { key: f.key, userLabel: f.userLabel }; }));
+    var liElements = editor.querySelectorAll("li");
+    console.log("Total <li> in editor:", liElements.length);
+    for (var i = 0; i < liElements.length; i++) {
+      var li = liElements[i];
+      var parent = li.parentElement;
+      var tag = parent ? parent.tagName : "?";
+      var text = (li.textContent || "").replace(/\s+/g, " ").trim().slice(0, 40);
+      console.log("  LI " + (i + 1) + ": parent=" + tag + ", depth=" + getListDepth(li) + ", text~=" + JSON.stringify(text));
+    }
+    console.groupEnd();
+  })();
+
+  // Build map: LI element -> { key, index }. Use Map so DOM elements are keys by reference (plain object would stringify them to "[object HTMLLIElement]" and overwrite).
+  var liToBulletInfo = new Map();
+  var liSegmentMap = {};
+  var liElements = editor.querySelectorAll("li");
+  console.group("[RetainFormat] ASSIGNMENT: building liToBulletInfo (each LI -> key, index)");
+  for (var liIdx = 0; liIdx < liElements.length; liIdx++) {
+    var li = liElements[liIdx];
+    var parent = li.parentElement;
+    if (!parent || (parent.tagName !== "UL" && parent.tagName !== "OL")) continue;
+    var liStyle = window.getComputedStyle(li);
+    var listStyleType = (liStyle.listStyleType || "disc").trim().toLowerCase();
+    if (listStyleType === "none") listStyleType = "disc";
+    var depth = getListDepth(li);
+    var key = listStyleType + "_L" + depth;
+    var siblings = [];
+    for (var s = 0; s < parent.children.length; s++) {
+      if (parent.children[s].tagName === "LI") siblings.push(parent.children[s]);
+    }
+    var indexInList = siblings.indexOf(li) + 1;
+    console.log("  ASSIGN liIdx=" + liIdx + " text=" + JSON.stringify((li.textContent || "").trim().slice(0, 15)) + " | getListDepth(li)=" + depth + " listStyleType=" + listStyleType + " -> key=" + key + " | siblings.length=" + siblings.length + " indexInList=" + indexInList);
+    liToBulletInfo.set(li, { key: key, index: indexInList });
+  }
+  console.groupEnd();
+  // --- LOG: every var between building liToBulletInfo and ASSIGN label ---
+  console.group("[RetainFormat] TRACE: vars from liToBulletInfo build -> ASSIGN label");
+  var topLevelKey = null;
+  for (var i = 0; i < liElements.length; i++) {
+    var info = liToBulletInfo.get(liElements[i]);
+    var liTextI = (liElements[i].textContent || "").trim().slice(0, 12);
+    var keySuffix = info ? info.key.slice(-3) : "n/a";
+    var isL1 = !!(info && info.key.length >= 3 && info.key.slice(-3) === "_L1");
+    console.log("  topLevelKey loop i=" + i + " liText=" + JSON.stringify(liTextI) + " info.key=" + (info ? info.key : "?") + " key.slice(-3)=" + keySuffix + " isL1=" + isL1);
+    if (info && info.key.length >= 3 && info.key.slice(-3) === "_L1") {
+      topLevelKey = info.key;
+      console.log("  -> ASSIGN topLevelKey=" + topLevelKey + " (break)");
+      break;
+    }
+  }
+  console.log("  FINAL topLevelKey=" + topLevelKey);
+  var docOrder = [];
+  if (topLevelKey) {
+    for (var j = 0; j < liElements.length; j++) {
+      var inf = liToBulletInfo.get(liElements[j]);
+      var liTextJ = (liElements[j].textContent || "").trim().slice(0, 12);
+      var match = !!(inf && inf.key === topLevelKey);
+      console.log("  docOrder loop j=" + j + " liText=" + JSON.stringify(liTextJ) + " inf.key=" + (inf ? inf.key : "?") + " match=" + match);
+      if (inf && inf.key === topLevelKey) docOrder.push(liElements[j]);
+    }
+    console.log("  ASSIGN docOrder.length=" + docOrder.length);
+    for (var k = 0; k < docOrder.length; k++) {
+      var docEntry = liToBulletInfo.get(docOrder[k]);
+      var oldIndex = docEntry.index;
+      docEntry.index = k + 1;
+      console.log("  renumber k=" + k + " docOrder[k].text=" + JSON.stringify((docOrder[k].textContent || "").trim().slice(0, 12)) + " ASSIGN index " + (k + 1) + " (was " + oldIndex + ")");
+    }
+  }
+  var bulletInfoByIndex = [];
+  for (var b = 0; b < liElements.length; b++) {
+    var fromMap = liToBulletInfo.get(liElements[b]);
+    bulletInfoByIndex[b] = fromMap;
+    console.log("  bulletInfoByIndex b=" + b + " liText=" + JSON.stringify((liElements[b].textContent || "").trim().slice(0, 12)) + " ASSIGN from liToBulletInfo[liElements[b]] -> key=" + (fromMap ? fromMap.key : "?") + " index=" + (fromMap ? fromMap.index : "?"));
+  }
+  var getBulletInfoCallCount = 0;
+  function getBulletInfoForLI(li) {
+    var liT = (li && li.textContent) ? (li.textContent || "").trim().slice(0, 12) : "?";
+    var foundIdx = -1;
+    for (var idx = 0; idx < liElements.length; idx++) {
+      if (liElements[idx] === li) {
+        foundIdx = idx;
+        break;
+      }
+    }
+    var ret = foundIdx >= 0 ? bulletInfoByIndex[foundIdx] : liToBulletInfo.get(li);
+    getBulletInfoCallCount++;
+    if (getBulletInfoCallCount <= 20) {
+      console.log("  getBulletInfoForLI call#" + getBulletInfoCallCount + " liText=" + JSON.stringify(liT) + " foundIdx=" + foundIdx + " ret.key=" + (ret ? ret.key : "?") + " ret.index=" + (ret ? ret.index : "?"));
+    }
+    return ret;
+  }
+  console.groupEnd();
+  // For LIs that contain nested UL/OL, build segment map: content starts new segment (1=A, 2=B, 3=C, 4=D); UL joins current segment (first UL -> 2, second UL -> 4).
+  for (var liIdx = 0; liIdx < liElements.length; liIdx++) {
+    var li = liElements[liIdx];
+    var hasNested = li.querySelector("ul, ol");
+    if (!hasNested) continue;
+    var map = {};
+    var segIdx = 1;
+    var childNodes = li.childNodes;
+    for (var c = 0; c < childNodes.length; c++) {
+      var child = childNodes[c];
+      var isList = child.nodeType === Node.ELEMENT_NODE && (child.tagName === "UL" || child.tagName === "OL");
+      console.log("child megha4", child);
+      console.log("isList megha5", isList);
+      if (isList) {
+        map[child] = segIdx;
+      } else {
+        console.log("child megha6", child);
+        console.log("segIdx megha7", segIdx);
+        map[child] = segIdx;
+        segIdx++;
+      }
+    }
+    liSegmentMap[li] = map;
+  }
+
+  // ——— DEBUG: liToBulletInfo and liSegmentMap ———
+  (function debugMaps() {
+    console.group("[RetainFormat] liToBulletInfo & liSegmentMap");
+    var liList = editor.querySelectorAll("li");
+    for (var i = 0; i < liList.length; i++) {
+      var li = liList[i];
+      var infoByLi = liToBulletInfo.get(li);
+      var infoByElements = liToBulletInfo.get(liElements[i]);
+      var sameRef = li === liElements[i];
+      var seg = liSegmentMap[li];
+      var text = (li.textContent || "").replace(/\s+/g, " ").trim().slice(0, 30);
+      console.log("i=" + i + " text=" + JSON.stringify(text) + " | sameRef(li===liElements[i])=" + sameRef + " | infoByLi.key=" + (infoByLi ? infoByLi.key : "none") + " | infoByElements.key=" + (infoByElements ? infoByElements.key : "none") + (seg ? " | segMap" : ""));
+    }
+    console.groupEnd();
+  })();
+
+  // Helper: get segment index for a text node under an LI that has a segment map (used when one LI wraps multiple logical items)
+  function getSegmentIndexForNode(li, textNode) {
+    var map = liSegmentMap[li];
+    if (!map) return null;
+    var node = textNode;
+    while (node && node.parentElement !== li) {
+      node = node.parentElement;
+    }
+    if (!node) return null;
+    return map[node] != null ? map[node] : null;
+  }
+
   // Collect text nodes and <br> markers in document order
   var walker = document.createTreeWalker(
     editor,
@@ -470,10 +784,25 @@ function buildSegmentedText(activeFormats) {
     } else if (current.nodeType === Node.TEXT_NODE) {
       var text = current.nodeValue || "";
       if (text.length === 0) continue;
+      var nodeLabels = allFormatsForTextNode(current, activeFormats, getBulletInfoForLI, getSegmentIndexForNode);
       nodes.push({ type: "text", node: current, text: text });
-      labelsPerIndex.push(allFormatsForTextNode(current, activeFormats));
+      labelsPerIndex.push(nodeLabels);
     }
   }
+
+  // ——— DEBUG: per-text-node labels ———
+  (function debugNodeLabels() {
+    console.group("[RetainFormat] Text node -> labels");
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].type === "br") {
+        console.log("  [br] -> []");
+        continue;
+      }
+      var t = (nodes[i].text || "").replace(/\s/g, "·").slice(0, 20);
+      console.log("  " + JSON.stringify(t) + " -> " + JSON.stringify(labelsPerIndex[i]));
+    }
+    console.groupEnd();
+  })();
 
   // Compute span length (first/last index) for each label so we can order outer vs inner tags
   var spanStart = {};
@@ -484,8 +813,10 @@ function buildSegmentedText(activeFormats) {
       var lbl = labels[li];
       if (spanStart[lbl] === undefined) {
         spanStart[lbl] = i;
+        console.log("spanStart megha8", spanStart);
       }
       spanEnd[lbl] = i;
+      console.log("spanEnd megha9", spanEnd);
     }
   }
 
@@ -493,13 +824,17 @@ function buildSegmentedText(activeFormats) {
   function getFormatElement(textNode, formatLabel) {
     if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return null;
     var fmt = activeFormats.find(function (f) {
-      return f.userLabel === formatLabel;
+      if (f.userLabel === formatLabel) return true;
+      if (f.kind === "bullet" && formatLabel.indexOf(f.userLabel + " ") === 0) return true;
+      console.log("f megha16", f);
+      return false;
     });
     if (!fmt) return null;
+    console.log("fmt megha15", fmt);
 
     var el = textNode.parentElement;
     if (!el) return null;
-
+    console.log("el megha10", el);
     // Check if this element or an ancestor has the format
     var checkEl = el;
     while (checkEl && checkEl !== editor.parentNode) {
@@ -507,7 +842,10 @@ function buildSegmentedText(activeFormats) {
       var defaultColor = editorDefaultColor;
       var defaultAlign = editorDefaultTextAlign;
       var defaultWeight = editorDefaultWeight;
-
+      console.log("style megha11", style);
+      console.log("defaultColor megha12", defaultColor);
+      console.log("defaultAlign megha13", defaultAlign);
+      console.log("defaultWeight megha14", defaultWeight);
       var matches = false;
       if (fmt.kind === "bold") {
         var weightStr = style.fontWeight;
@@ -562,6 +900,20 @@ function buildSegmentedText(activeFormats) {
         if (align && align !== defaultAlign && align === fmt.key) {
           matches = true;
         }
+      } else if (fmt.kind === "bullet" && checkEl.tagName === "LI") {
+        var bulletInfo = getBulletInfoForLI(checkEl);
+        if (bulletInfo) {
+          var indexForLabel = bulletInfo.index;
+          if (liSegmentMap[checkEl]) {
+            var seg = getSegmentIndexForNode(checkEl, textNode);
+            console.log("seg megha17", seg);
+            if (seg != null) indexForLabel = seg;
+          }
+          if (bulletInfo.key === fmt.key && (fmt.userLabel + " " + indexForLabel) === formatLabel) {
+            console.log("matches megha18", matches);
+            matches = true;
+          }
+        }
       }
 
       if (matches) {
@@ -584,13 +936,14 @@ function buildSegmentedText(activeFormats) {
       labelElements[lbl] = getFormatElement(textNode, lbl);
     }
 
-    // Sort by DOM nesting: outer elements first
+    // Sort by DOM nesting: outer elements first (comparator must be consistent to avoid infinite sort loop)
     return labels.slice().sort(function (a, b) {
       var elA = labelElements[a];
       var elB = labelElements[b];
       if (!elA && !elB) return 0;
       if (!elA) return 1;
       if (!elB) return -1;
+      if (elA === elB) return 0;
 
       // Check if A contains B (A is outer)
       var check = elB;
@@ -619,25 +972,91 @@ function buildSegmentedText(activeFormats) {
     });
   }
 
+  // Tag is a bullet tag if it looks like "label N" (e.g. "main 1", "sub 2")
+  function isBulletTag(tagName) {
+    return /^.+\s\d+$/.test(tagName);
+  }
+
+  // Priority for a tag string (used for open/close order: open structural first, close semantic/visual before structural).
+  function getTagPriority(tag) {
+    for (var fi = 0; fi < activeFormats.length; fi++) {
+      var fmt = activeFormats[fi];
+      if (tag === fmt.userLabel) return fmt.priority != null ? fmt.priority : FORMAT_LAYERS.visual;
+      if (fmt.kind === "bullet" && tag.indexOf(fmt.userLabel + " ") === 0) return fmt.priority != null ? fmt.priority : FORMAT_LAYERS.structural;
+    }
+    return FORMAT_LAYERS.visual;
+  }
+
+  // Find the LI that owns this bullet tag (same logic as label assignment).
+  function getOwnerLIForBulletTag(textNode, bulletTag) {
+    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return null;
+    for (var ei = 0; ei < liElements.length; ei++) {
+      var li = liElements[ei];
+      var info = getBulletInfoForLI(li);
+      if (!info) continue;
+      var fmt = activeFormats.find(function (f) { return f.kind === "bullet" && f.key === info.key; });
+      if (!fmt) continue;
+      var indexToUse = info.index;
+      if (getSegmentIndexForNode) {
+        var seg = getSegmentIndexForNode(li, textNode);
+        if (seg != null) indexToUse = seg;
+      }
+      var label = fmt.userLabel + " " + indexToUse;
+      if (label === bulletTag) return li;
+    }
+    return null;
+  }
+
+  // Like highlight: keep bullet tag open while current node is still inside the LI that owns that tag.
+  // Only close when we've left that LI (so outer bullets close only after all inner bullets are closed).
+  function isNodeInBulletScope(textNode, bulletTag) {
+    var ownerLI = getOwnerLIForBulletTag(textNode, bulletTag);
+    if (!ownerLI) return false;
+    var n = textNode.parentElement;
+    while (n && n !== editor.parentNode) {
+      if (n === ownerLI) return true;
+      n = n.parentElement;
+    }
+    return false;
+  }
+
   var result = "";
   var openTags = [];
+
+  console.group("[TAG_OUTPUT] Build output: open/close/append per node (like highlight: open once, close when leaving scope)");
 
   for (var idx = 0; idx < nodes.length; idx++) {
     var item = nodes[idx];
     if (item.type === "br") {
+      console.log("[TAG_OUTPUT] idx=" + idx + " type=br -> ASSIGN result += \\n");
       result += "\n";
       continue;
     }
 
     var textNodeLabels = labelsPerIndex[idx];
+    var currentNode = item.node;
+    var textPreview = (item.text || "").replace(/\s/g, "·").slice(0, 25);
 
-    // Close tags that are no longer active (inner to outer)
-    for (var ci = openTags.length - 1; ci >= 0; ci--) {
-      if (textNodeLabels.indexOf(openTags[ci]) === -1) {
-        result += "</" + openTags[ci] + ">";
-        openTags.splice(ci, 1);
-      }
+    console.log("[TAG_OUTPUT] idx=" + idx + " text~=" + JSON.stringify(textPreview) + " | labels=" + JSON.stringify(textNodeLabels) + " | openTags(before close)=" + JSON.stringify(openTags));
+
+    // Close tags so inner are always closed before outer: find the first (outermost) tag that needs closing,
+    // then close from the end of openTags down to that index (so we close </imp></main tag 1>, not </main tag 1></imp>).
+    // No sort, no extra array, no variable shadowing — one pass to find min index, then one loop to close.
+    var minCloseIdx = openTags.length;
+    for (var ci = 0; ci < openTags.length; ci++) {
+      var tagToClose = openTags[ci];
+      if (textNodeLabels.indexOf(tagToClose) !== -1) continue;
+      if (isBulletTag(tagToClose) && isNodeInBulletScope(currentNode, tagToClose)) continue;
+      if (ci < minCloseIdx) minCloseIdx = ci;
     }
+    for (var cj = openTags.length - 1; cj >= minCloseIdx; cj--) {
+      var t = openTags[cj];
+      console.log("  [TAG_OUTPUT] ASSIGN close tag: </" + t + ">");
+      result += "</" + t + ">";
+      if (isBulletTag(t)) result += "\n";
+      openTags.splice(cj, 1);
+    }
+    console.log("  [TAG_OUTPUT] openTags(after close)=" + JSON.stringify(openTags));
 
     // Determine which tags need to be opened (not already open)
     var tagsToOpen = [];
@@ -648,29 +1067,50 @@ function buildSegmentedText(activeFormats) {
       }
     }
 
-    // Sort tags to open by DOM nesting order (outer to inner)
+    // Open in priority order: structural first, then semantic, then visual (so when we close in reverse we get </highlight></bullet>).
+    // Use getNestedOrder for DOM order within same priority; sort by priority first.
     var nestedOrder = getNestedOrder(item.node, tagsToOpen);
+    tagsToOpen.sort(function (a, b) {
+      var pa = getTagPriority(a);
+      var pb = getTagPriority(b);
+      if (pa !== pb) return pa - pb;
+      var ia = nestedOrder.indexOf(a);
+      var ib = nestedOrder.indexOf(b);
+      return ia - ib;
+    });
+    console.log("  [TAG_OUTPUT] tagsToOpen=" + JSON.stringify(tagsToOpen) + " (priority order: structural then semantic then visual)");
 
-    // Open new tags in nesting order (outer to inner)
-    for (var oi = 0; oi < nestedOrder.length; oi++) {
-      var tag = nestedOrder[oi];
+    // Open new tags (structural first, then semantic, then visual)
+    for (var oi = 0; oi < tagsToOpen.length; oi++) {
+      var tag = tagsToOpen[oi];
+      if (isBulletTag(tag) && result.length > 0 && result.charAt(result.length - 1) !== "\n") {
+        console.log("  [TAG_OUTPUT] ASSIGN newline before bullet");
+        result += "\n";
+      }
+      console.log("  [TAG_OUTPUT] ASSIGN open tag: <" + tag + ">");
       result += "<" + tag + ">";
       openTags.push(tag);
     }
+    console.log("  [TAG_OUTPUT] openTags(after open)=" + JSON.stringify(openTags));
+    console.log("  [TAG_OUTPUT] ASSIGN append text: " + JSON.stringify(textPreview));
 
     // Append the actual text exactly as in input
     result += item.text;
   }
 
-  // Close any remaining open tags at the end (inner to outer)
+  // Close any remaining open tags at the end (reverse order = inner to outer; correct because we opened in priority order)
+  console.log("[TAG_OUTPUT] ASSIGN close remaining open tags (inner to outer): " + JSON.stringify(openTags));
   for (var cj = openTags.length - 1; cj >= 0; cj--) {
+    console.log("  [TAG_OUTPUT] ASSIGN close: </" + openTags[cj] + ">");
     result += "</" + openTags[cj] + ">";
+    if (isBulletTag(openTags[cj])) result += "\n";
   }
+  console.groupEnd();
 
   return result;
 }
 
-function allFormatsForTextNode(textNode, activeFormats) {
+function allFormatsForTextNode(textNode, activeFormats, getBulletInfoForLI, getSegmentIndexForNode) {
   var labels = [];
   if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
     return labels;
@@ -686,7 +1126,43 @@ function allFormatsForTextNode(textNode, activeFormats) {
   for (var i = 0; i < activeFormats.length; i++) {
     var fmt = activeFormats[i];
     var label = fmt.userLabel;
-    if (!label || labels.indexOf(label) !== -1) continue;
+    if (!label) continue;
+    if (fmt.kind === "bullet") {
+      if (!getBulletInfoForLI) continue;
+      var anc = el;
+      var ancestorLIs = [];
+      while (anc && anc !== editor.parentNode) {
+        if (anc.tagName === "LI") {
+          var info = getBulletInfoForLI(anc);
+          if (info) ancestorLIs.push(anc);
+        }
+        anc = anc.parentElement;
+      }
+      ancestorLIs.reverse();
+      var textNodePreview = (textNode.nodeValue || "").trim().slice(0, 12);
+      if (ancestorLIs.length > 0) {
+        console.log("[RetainFormat] allFormatsForTextNode textNode~=" + JSON.stringify(textNodePreview) + " ancestorLIs.length=" + ancestorLIs.length + " fmt.key=" + fmt.key);
+      }
+      for (var a = 0; a < ancestorLIs.length; a++) {
+        var li = ancestorLIs[a];
+        var bulletInfo = getBulletInfoForLI(li);
+        var liPreview = (li.textContent || "").trim().slice(0, 12);
+        console.log("  a=" + a + " liText=" + JSON.stringify(liPreview) + " bulletInfo=" + (bulletInfo ? bulletInfo.key + "," + bulletInfo.index : "null") + " fmt.key=" + fmt.key + " match=" + (bulletInfo && bulletInfo.key === fmt.key));
+        if (!bulletInfo || bulletInfo.key !== fmt.key) continue;
+        var indexToUse = bulletInfo.index;
+        if (getSegmentIndexForNode) {
+          var segIdx = getSegmentIndexForNode(li, textNode);
+          if (segIdx != null) indexToUse = segIdx;
+        }
+        var bulletLabel = fmt.userLabel + " " + indexToUse;
+        if (labels.indexOf(bulletLabel) === -1) {
+          console.log("[RetainFormat] ASSIGN label: textNode~=" + JSON.stringify(textNodePreview) + " | fmt.key=" + fmt.key + " indexToUse=" + indexToUse + " -> push \"" + bulletLabel + "\"");
+          labels.push(bulletLabel);
+        }
+      }
+      continue;
+    }
+    if (labels.indexOf(label) !== -1) continue;
 
     if (fmt.kind === "bold") {
       var isBold = false;
@@ -835,6 +1311,13 @@ function lineHasFormat(lineNode, fmt) {
         if (align && align !== defaultAlign && align === fmt.key) {
           return true;
         }
+      } else if (fmt.kind === "bullet" && tag === "LI") {
+        var liStyle = window.getComputedStyle(el);
+        var listStyleType = (liStyle.listStyleType || "disc").trim().toLowerCase();
+        if (listStyleType === "none") listStyleType = "disc";
+        var depth = getListDepth(el);
+        var bulletKey = listStyleType + "_L" + depth;
+        if (bulletKey === fmt.key) return true;
       }
     }
 
