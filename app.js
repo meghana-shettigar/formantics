@@ -486,7 +486,7 @@ function buildDetectedFormattingUI(found) {
   /** UI for Bullet/list formats. Key may be "disc_L1" (depth) so top-level and nested are separate. */
   function addBulletFormatsUI() {
     if (!found.bullets) return;
-    console.log("[RetainFormat] Detected bullet keys (Parse):", Object.keys(found.bullets));
+    // console.log("[RetainFormat] Detected bullet keys (Parse):", Object.keys(found.bullets));
     for (var fullKey in found.bullets) {
       if (!Object.prototype.hasOwnProperty.call(found.bullets, fullKey)) continue;
       (function (key) {
@@ -516,7 +516,7 @@ function buildDetectedFormattingUI(found) {
           // console.log("textSpan megha1", textSpan);
           // console.log("wrap megha2", wrap);
           // wrap.appendChild(textSpan);
-          console.log("preview megha3", preview);
+          // console.log("preview megha3", preview);
           preview.appendChild(wrap);
         });
       })(fullKey);
@@ -622,16 +622,16 @@ function buildSegmentedText(activeFormats) {
 
   // ——— DEBUG: bullet / list state ———
   (function debugBullets() {
-    console.group("[RetainFormat] Bullet / list debug");
-    console.log("activeFormats (bullet only):", activeFormats.filter(function (f) { return f.kind === "bullet"; }).map(function (f) { return { key: f.key, userLabel: f.userLabel }; }));
+    //console.group("[RetainFormat] Bullet / list debug");
+    // console.log("activeFormats (bullet only):", activeFormats.filter(function (f) { return f.kind === "bullet"; }).map(function (f) { return { key: f.key, userLabel: f.userLabel }; }));
     var liElements = editor.querySelectorAll("li");
-    console.log("Total <li> in editor:", liElements.length);
+    // console.log("Total <li> in editor:", liElements.length);
     for (var i = 0; i < liElements.length; i++) {
       var li = liElements[i];
       var parent = li.parentElement;
       var tag = parent ? parent.tagName : "?";
       var text = (li.textContent || "").replace(/\s+/g, " ").trim().slice(0, 40);
-      console.log("  LI " + (i + 1) + ": parent=" + tag + ", depth=" + getListDepth(li) + ", text~=" + JSON.stringify(text));
+      // console.log("  LI " + (i + 1) + ": parent=" + tag + ", depth=" + getListDepth(li) + ", text~=" + JSON.stringify(text));
     }
     console.groupEnd();
   })();
@@ -640,7 +640,7 @@ function buildSegmentedText(activeFormats) {
   var liToBulletInfo = new Map();
   var liSegmentMap = {};
   var liElements = editor.querySelectorAll("li");
-  console.group("[RetainFormat] ASSIGNMENT: building liToBulletInfo (each LI -> key, index)");
+  //console.group("[RetainFormat] ASSIGNMENT: building liToBulletInfo (each LI -> key, index)");
   for (var liIdx = 0; liIdx < liElements.length; liIdx++) {
     var li = liElements[liIdx];
     var parent = li.parentElement;
@@ -655,48 +655,48 @@ function buildSegmentedText(activeFormats) {
       if (parent.children[s].tagName === "LI") siblings.push(parent.children[s]);
     }
     var indexInList = siblings.indexOf(li) + 1;
-    console.log("  ASSIGN liIdx=" + liIdx + " text=" + JSON.stringify((li.textContent || "").trim().slice(0, 15)) + " | getListDepth(li)=" + depth + " listStyleType=" + listStyleType + " -> key=" + key + " | siblings.length=" + siblings.length + " indexInList=" + indexInList);
+    // console.log("  ASSIGN liIdx=" + liIdx + " text=" + JSON.stringify((li.textContent || "").trim().slice(0, 15)) + " | getListDepth(li)=" + depth + " listStyleType=" + listStyleType + " -> key=" + key + " | siblings.length=" + siblings.length + " indexInList=" + indexInList);
     liToBulletInfo.set(li, { key: key, index: indexInList });
   }
   console.groupEnd();
   // --- LOG: every var between building liToBulletInfo and ASSIGN label ---
-  console.group("[RetainFormat] TRACE: vars from liToBulletInfo build -> ASSIGN label");
+  //console.group("[RetainFormat] TRACE: vars from liToBulletInfo build -> ASSIGN label");
   var topLevelKey = null;
   for (var i = 0; i < liElements.length; i++) {
     var info = liToBulletInfo.get(liElements[i]);
     var liTextI = (liElements[i].textContent || "").trim().slice(0, 12);
     var keySuffix = info ? info.key.slice(-3) : "n/a";
     var isL1 = !!(info && info.key.length >= 3 && info.key.slice(-3) === "_L1");
-    console.log("  topLevelKey loop i=" + i + " liText=" + JSON.stringify(liTextI) + " info.key=" + (info ? info.key : "?") + " key.slice(-3)=" + keySuffix + " isL1=" + isL1);
+    // console.log("  topLevelKey loop i=" + i + " liText=" + JSON.stringify(liTextI) + " info.key=" + (info ? info.key : "?") + " key.slice(-3)=" + keySuffix + " isL1=" + isL1);
     if (info && info.key.length >= 3 && info.key.slice(-3) === "_L1") {
       topLevelKey = info.key;
-      console.log("  -> ASSIGN topLevelKey=" + topLevelKey + " (break)");
+    //  console.log("  -> ASSIGN topLevelKey=" + topLevelKey + " (break)");
       break;
     }
   }
-  console.log("  FINAL topLevelKey=" + topLevelKey);
+  //console.log("  FINAL topLevelKey=" + topLevelKey);
   var docOrder = [];
   if (topLevelKey) {
     for (var j = 0; j < liElements.length; j++) {
       var inf = liToBulletInfo.get(liElements[j]);
       var liTextJ = (liElements[j].textContent || "").trim().slice(0, 12);
       var match = !!(inf && inf.key === topLevelKey);
-      console.log("  docOrder loop j=" + j + " liText=" + JSON.stringify(liTextJ) + " inf.key=" + (inf ? inf.key : "?") + " match=" + match);
+    //  console.log("  docOrder loop j=" + j + " liText=" + JSON.stringify(liTextJ) + " inf.key=" + (inf ? inf.key : "?") + " match=" + match);
       if (inf && inf.key === topLevelKey) docOrder.push(liElements[j]);
     }
-    console.log("  ASSIGN docOrder.length=" + docOrder.length);
+    //console.log("  ASSIGN docOrder.length=" + docOrder.length);
     for (var k = 0; k < docOrder.length; k++) {
       var docEntry = liToBulletInfo.get(docOrder[k]);
       var oldIndex = docEntry.index;
       docEntry.index = k + 1;
-      console.log("  renumber k=" + k + " docOrder[k].text=" + JSON.stringify((docOrder[k].textContent || "").trim().slice(0, 12)) + " ASSIGN index " + (k + 1) + " (was " + oldIndex + ")");
+    //  console.log("  renumber k=" + k + " docOrder[k].text=" + JSON.stringify((docOrder[k].textContent || "").trim().slice(0, 12)) + " ASSIGN index " + (k + 1) + " (was " + oldIndex + ")");
     }
   }
   var bulletInfoByIndex = [];
   for (var b = 0; b < liElements.length; b++) {
     var fromMap = liToBulletInfo.get(liElements[b]);
     bulletInfoByIndex[b] = fromMap;
-    console.log("  bulletInfoByIndex b=" + b + " liText=" + JSON.stringify((liElements[b].textContent || "").trim().slice(0, 12)) + " ASSIGN from liToBulletInfo[liElements[b]] -> key=" + (fromMap ? fromMap.key : "?") + " index=" + (fromMap ? fromMap.index : "?"));
+   // console.log("  bulletInfoByIndex b=" + b + " liText=" + JSON.stringify((liElements[b].textContent || "").trim().slice(0, 12)) + " ASSIGN from liToBulletInfo[liElements[b]] -> key=" + (fromMap ? fromMap.key : "?") + " index=" + (fromMap ? fromMap.index : "?"));
   }
   var getBulletInfoCallCount = 0;
   function getBulletInfoForLI(li) {
@@ -711,7 +711,7 @@ function buildSegmentedText(activeFormats) {
     var ret = foundIdx >= 0 ? bulletInfoByIndex[foundIdx] : liToBulletInfo.get(li);
     getBulletInfoCallCount++;
     if (getBulletInfoCallCount <= 20) {
-      console.log("  getBulletInfoForLI call#" + getBulletInfoCallCount + " liText=" + JSON.stringify(liT) + " foundIdx=" + foundIdx + " ret.key=" + (ret ? ret.key : "?") + " ret.index=" + (ret ? ret.index : "?"));
+    //  console.log("  getBulletInfoForLI call#" + getBulletInfoCallCount + " liText=" + JSON.stringify(liT) + " foundIdx=" + foundIdx + " ret.key=" + (ret ? ret.key : "?") + " ret.index=" + (ret ? ret.index : "?"));
     }
     return ret;
   }
@@ -727,13 +727,13 @@ function buildSegmentedText(activeFormats) {
     for (var c = 0; c < childNodes.length; c++) {
       var child = childNodes[c];
       var isList = child.nodeType === Node.ELEMENT_NODE && (child.tagName === "UL" || child.tagName === "OL");
-      console.log("child megha4", child);
-      console.log("isList megha5", isList);
+      //console.log("child megha4", child);
+      //console.log("isList megha5", isList);
       if (isList) {
         map[child] = segIdx;
       } else {
-        console.log("child megha6", child);
-        console.log("segIdx megha7", segIdx);
+       // console.log("child megha6", child);
+        //console.log("segIdx megha7", segIdx);
         map[child] = segIdx;
         segIdx++;
       }
@@ -743,7 +743,7 @@ function buildSegmentedText(activeFormats) {
 
   // ——— DEBUG: liToBulletInfo and liSegmentMap ———
   (function debugMaps() {
-    console.group("[RetainFormat] liToBulletInfo & liSegmentMap");
+    //console.group("[RetainFormat] liToBulletInfo & liSegmentMap");
     var liList = editor.querySelectorAll("li");
     for (var i = 0; i < liList.length; i++) {
       var li = liList[i];
@@ -752,7 +752,7 @@ function buildSegmentedText(activeFormats) {
       var sameRef = li === liElements[i];
       var seg = liSegmentMap[li];
       var text = (li.textContent || "").replace(/\s+/g, " ").trim().slice(0, 30);
-      console.log("i=" + i + " text=" + JSON.stringify(text) + " | sameRef(li===liElements[i])=" + sameRef + " | infoByLi.key=" + (infoByLi ? infoByLi.key : "none") + " | infoByElements.key=" + (infoByElements ? infoByElements.key : "none") + (seg ? " | segMap" : ""));
+      //console.log("i=" + i + " text=" + JSON.stringify(text) + " | sameRef(li===liElements[i])=" + sameRef + " | infoByLi.key=" + (infoByLi ? infoByLi.key : "none") + " | infoByElements.key=" + (infoByElements ? infoByElements.key : "none") + (seg ? " | segMap" : ""));
     }
     console.groupEnd();
   })();
@@ -793,14 +793,14 @@ function buildSegmentedText(activeFormats) {
 
   // ——— DEBUG: per-text-node labels ———
   (function debugNodeLabels() {
-    console.group("[RetainFormat] Text node -> labels");
+    //console.group("[RetainFormat] Text node -> labels");
     for (var i = 0; i < nodes.length; i++) {
       if (nodes[i].type === "br") {
-        console.log("  [br] -> []");
+        //console.log("  [br] -> []");
         continue;
       }
       var t = (nodes[i].text || "").replace(/\s/g, "·").slice(0, 20);
-      console.log("  " + JSON.stringify(t) + " -> " + JSON.stringify(labelsPerIndex[i]));
+      //console.log("  " + JSON.stringify(t) + " -> " + JSON.stringify(labelsPerIndex[i]));
     }
     console.groupEnd();
   })();
@@ -814,10 +814,10 @@ function buildSegmentedText(activeFormats) {
       var lbl = labels[li];
       if (spanStart[lbl] === undefined) {
         spanStart[lbl] = i;
-        console.log("spanStart megha8", spanStart);
+        //console.log("spanStart megha8", spanStart);
       }
       spanEnd[lbl] = i;
-      console.log("spanEnd megha9", spanEnd);
+      //console.log("spanEnd megha9", spanEnd);
     }
   }
 
@@ -907,11 +907,11 @@ function buildSegmentedText(activeFormats) {
           var indexForLabel = bulletInfo.index;
           if (liSegmentMap[checkEl]) {
             var seg = getSegmentIndexForNode(checkEl, textNode);
-            console.log("seg megha17", seg);
+            //console.log("seg megha17", seg);
             if (seg != null) indexForLabel = seg;
           }
           if (bulletInfo.key === fmt.key && (fmt.userLabel + " " + indexForLabel) === formatLabel) {
-            console.log("matches megha18", matches);
+            //console.log("matches megha18", matches);
             matches = true;
           }
         }
@@ -1034,12 +1034,12 @@ function buildSegmentedText(activeFormats) {
   var result = "";
   var openTags = [];
 
-  console.group("[TAG_OUTPUT] Build output: open/close/append per node (like highlight: open once, close when leaving scope)");
+  //console.group("[TAG_OUTPUT] Build output: open/close/append per node (like highlight: open once, close when leaving scope)");
 
   for (var idx = 0; idx < nodes.length; idx++) {
     var item = nodes[idx];
     if (item.type === "br") {
-      console.log("[TAG_OUTPUT] idx=" + idx + " type=br -> ASSIGN result += \\n");
+      //console.log("[TAG_OUTPUT] idx=" + idx + " type=br -> ASSIGN result += \\n");
       result += "\n";
       continue;
     }
@@ -1048,7 +1048,7 @@ function buildSegmentedText(activeFormats) {
     var currentNode = item.node;
     var textPreview = (item.text || "").replace(/\s/g, "·").slice(0, 25);
 
-    console.log("[TAG_OUTPUT] idx=" + idx + " text~=" + JSON.stringify(textPreview) + " | labels=" + JSON.stringify(textNodeLabels) + " | openTags(before close)=" + JSON.stringify(openTags));
+    //console.log("[TAG_OUTPUT] idx=" + idx + " text~=" + JSON.stringify(textPreview) + " | labels=" + JSON.stringify(textNodeLabels) + " | openTags(before close)=" + JSON.stringify(openTags));
 
     // Stack rule: outer tags go in first; don't close an outer (lower-depth) bullet until all inner (higher-depth) are closed.
     // So: only close a bullet tag if current labels do NOT contain any bullet with depth > this tag's depth.
@@ -1073,12 +1073,12 @@ function buildSegmentedText(activeFormats) {
     }
     for (var cj = openTags.length - 1; cj >= minCloseIdx; cj--) {
       var t = openTags[cj];
-      console.log("  [TAG_OUTPUT] ASSIGN close tag: </" + t + ">");
+      //console.log("  [TAG_OUTPUT] ASSIGN close tag: </" + t + ">");
       result += "</" + t + ">";
       if (isBulletTag(t)) result += "\n";
       openTags.splice(cj, 1);
     }
-    console.log("  [TAG_OUTPUT] openTags(after close)=" + JSON.stringify(openTags));
+    //console.log("  [TAG_OUTPUT] openTags(after close)=" + JSON.stringify(openTags));
 
     // Determine which tags need to be opened (not already open)
     var tagsToOpen = [];
@@ -1103,30 +1103,30 @@ function buildSegmentedText(activeFormats) {
       var ib = nestedOrder.indexOf(b);
       return ia - ib;
     });
-    console.log("  [TAG_OUTPUT] tagsToOpen=" + JSON.stringify(tagsToOpen) + " (priority then depth 1->2->3 then DOM)");
+    // console.log("  [TAG_OUTPUT] tagsToOpen=" + JSON.stringify(tagsToOpen) + " (priority then depth 1->2->3 then DOM)");
 
     // Open new tags (structural first, then semantic, then visual)
     for (var oi = 0; oi < tagsToOpen.length; oi++) {
       var tag = tagsToOpen[oi];
       if (isBulletTag(tag) && result.length > 0 && result.charAt(result.length - 1) !== "\n") {
-        console.log("  [TAG_OUTPUT] ASSIGN newline before bullet");
+        //console.log("  [TAG_OUTPUT] ASSIGN newline before bullet");
         result += "\n";
       }
-      console.log("  [TAG_OUTPUT] ASSIGN open tag: <" + tag + ">");
+      //console.log("  [TAG_OUTPUT] ASSIGN open tag: <" + tag + ">");
       result += "<" + tag + ">";
       openTags.push(tag);
     }
-    console.log("  [TAG_OUTPUT] openTags(after open)=" + JSON.stringify(openTags));
-    console.log("  [TAG_OUTPUT] ASSIGN append text: " + JSON.stringify(textPreview));
+    //console.log("  [TAG_OUTPUT] openTags(after open)=" + JSON.stringify(openTags));
+    //console.log("  [TAG_OUTPUT] ASSIGN append text: " + JSON.stringify(textPreview));
 
     // Append the actual text exactly as in input
     result += item.text;
   }
 
   // Close any remaining open tags at the end (reverse order = inner to outer; correct because we opened in priority order)
-  console.log("[TAG_OUTPUT] ASSIGN close remaining open tags (inner to outer): " + JSON.stringify(openTags));
+  // console.log("[TAG_OUTPUT] ASSIGN close remaining open tags (inner to outer): " + JSON.stringify(openTags));
   for (var cj = openTags.length - 1; cj >= 0; cj--) {
-    console.log("  [TAG_OUTPUT] ASSIGN close: </" + openTags[cj] + ">");
+    //console.log("  [TAG_OUTPUT] ASSIGN close: </" + openTags[cj] + ">");
     result += "</" + openTags[cj] + ">";
     if (isBulletTag(openTags[cj])) result += "\n";
   }
@@ -1166,13 +1166,13 @@ function allFormatsForTextNode(textNode, activeFormats, getBulletInfoForLI, getS
       ancestorLIs.reverse();
       var textNodePreview = (textNode.nodeValue || "").trim().slice(0, 12);
       if (ancestorLIs.length > 0) {
-        console.log("[RetainFormat] allFormatsForTextNode textNode~=" + JSON.stringify(textNodePreview) + " ancestorLIs.length=" + ancestorLIs.length + " fmt.key=" + fmt.key);
+        //console.log("[RetainFormat] allFormatsForTextNode textNode~=" + JSON.stringify(textNodePreview) + " ancestorLIs.length=" + ancestorLIs.length + " fmt.key=" + fmt.key);
       }
       for (var a = 0; a < ancestorLIs.length; a++) {
         var li = ancestorLIs[a];
         var bulletInfo = getBulletInfoForLI(li);
         var liPreview = (li.textContent || "").trim().slice(0, 12);
-        console.log("  a=" + a + " liText=" + JSON.stringify(liPreview) + " bulletInfo=" + (bulletInfo ? bulletInfo.key + "," + bulletInfo.index : "null") + " fmt.key=" + fmt.key + " match=" + (bulletInfo && bulletInfo.key === fmt.key));
+        //console.log("  a=" + a + " liText=" + JSON.stringify(liPreview) + " bulletInfo=" + (bulletInfo ? bulletInfo.key + "," + bulletInfo.index : "null") + " fmt.key=" + fmt.key + " match=" + (bulletInfo && bulletInfo.key === fmt.key));
         if (!bulletInfo || bulletInfo.key !== fmt.key) continue;
         var indexToUse = bulletInfo.index;
         if (getSegmentIndexForNode) {
@@ -1181,7 +1181,7 @@ function allFormatsForTextNode(textNode, activeFormats, getBulletInfoForLI, getS
         }
         var bulletLabel = fmt.userLabel + " " + indexToUse;
         if (labels.indexOf(bulletLabel) === -1) {
-          console.log("[RetainFormat] ASSIGN label: textNode~=" + JSON.stringify(textNodePreview) + " | fmt.key=" + fmt.key + " indexToUse=" + indexToUse + " -> push \"" + bulletLabel + "\"");
+          //console.log("[RetainFormat] ASSIGN label: textNode~=" + JSON.stringify(textNodePreview) + " | fmt.key=" + fmt.key + " indexToUse=" + indexToUse + " -> push \"" + bulletLabel + "\"");
           labels.push(bulletLabel);
         }
       }
@@ -1735,7 +1735,7 @@ function sendFeedback(kind, email) {
 
   // If Firebase is not configured, just log locally and show a friendly message.
   if (!db) {
-    console.log("Feedback payload (Firebase not configured):", payload);
+    // console.log("Feedback payload (Firebase not configured):", payload);
     if (feedbackStatus) {
       feedbackStatus.textContent = "Thanks for your feedback.";
       setTimeout(function () {
