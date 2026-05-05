@@ -8,3 +8,9 @@
 
 /app.js
   Cache-Control: public, max-age=86400
+
+/paste-rich.js
+  Cache-Control: public, max-age=86400
+
+/post-ready-text.js
+  Cache-Control: public, max-age=86400

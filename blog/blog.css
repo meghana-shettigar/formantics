@@ -37,15 +37,26 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
-.blog-nav a {
+.blog-nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  justify-content: flex-end;
+}
+
+.blog-nav a,
+.blog-nav-links a {
   color: var(--blog-text);
   text-decoration: none;
   font-weight: 500;
 }
 
-.blog-nav a:hover {
+.blog-nav a:hover,
+.blog-nav-links a:hover {
   color: var(--blog-accent);
 }
 

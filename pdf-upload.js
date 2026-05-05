@@ -73,7 +73,7 @@
             var fullText = allText.join("\n\n");
             var hasText = fullText.trim().length > 0;
             if (!hasText) {
-              editor.innerHTML = "<p>No text could be extracted from this PDF. It may be image-only (e.g. a scanned invoice or photo). Use a PDF with selectable text, or copy text from the PDF and use <a href=\"/\">Text to Tags</a> instead.</p>";
+              editor.innerHTML = "<p>No text could be extracted from this PDF. It may be image-only (e.g. a scanned invoice or photo). Use a PDF with selectable text, or copy text from the PDF and use <a href=\"/text-to-tags.html\">Text to Tags</a> instead.</p>";
               editor.dispatchEvent(new Event("input", { bubbles: true }));
               if (pdfExtractArea) pdfExtractArea.classList.add("is-loaded");
               if (pdfStatus) {

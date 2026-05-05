@@ -911,7 +911,7 @@ body.theme-dark .detected-layer-visual {
 .detected-preview {
   display: inline-flex;
   align-items: center;
- /* gap: 6px;*/
+  gap: 6px;
   font-size: 13px;
   padding: 3px 8px;
   border-radius: var(--radius-sm);
@@ -1527,3 +1527,125 @@ body.theme-dark .app-credits .credits-links {
   text-decoration: underline;
 }
 
+/* ----- Screen reader only ----- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ----- Home landing ----- */
+.home-feature-grid {
+  max-width: 1120px;
+  margin: 0 auto 48px;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.home-feature-card {
+  background: var(--color-bg-light-elevated);
+  border: 1px solid var(--color-border-subtle-light);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+body.theme-dark .home-feature-card {
+  background: var(--color-bg-dark-elevated);
+  border-color: var(--color-border-subtle-dark);
+}
+
+.home-feature-title {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.3;
+  color: var(--color-text-light);
+}
+
+body.theme-dark .home-feature-title {
+  color: var(--color-text-dark);
+}
+
+.home-feature-desc {
+  margin: 0;
+  flex: 1;
+  color: var(--color-text-muted-light);
+  font-size: 15px;
+}
+
+body.theme-dark .home-feature-desc {
+  color: var(--color-text-muted-dark);
+}
+
+a.primary-btn.home-feature-cta {
+  align-self: flex-start;
+  text-decoration: none;
+  margin-top: 8px;
+}
+
+/* ----- Post-ready text tool ----- */
+.post-ready-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 16px 0;
+  padding: 14px 16px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle-light);
+  background: var(--color-bg-light-elevated);
+  color: var(--color-text-light);
+  resize: vertical;
+  min-height: 180px;
+}
+
+body.theme-dark .post-ready-textarea {
+  border-color: var(--color-border-subtle-dark);
+  background: var(--color-bg-dark-elevated);
+  color: var(--color-text-dark);
+}
+
+.post-ready-textarea:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.post-ready-textarea-output {
+  margin-bottom: 0;
+}
+
+.post-ready-output-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+/* Rich paste input (Post-ready): taller than main tool editor */
+.post-ready-input-editor.editor {
+  min-height: 280px;
+  max-height: min(520px, 70vh);
+  height: auto;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.post-ready-input-editor.editor:empty::before {
+  content: "Paste from Grok, ChatGPT, or any assistant (⌘V / Ctrl+V)…";
+}

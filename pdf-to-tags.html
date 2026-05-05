@@ -20,7 +20,8 @@
         </a>
         <ul class="nav-links">
           <li><a href="/" class="nav-link">Home</a></li>
-          <li><a href="/" class="nav-link">Text to Tags</a></li>
+          <li><a href="/text-to-tags.html" class="nav-link">Text to Tags</a></li>
+          <li><a href="/post-ready-text.html" class="nav-link">Post-ready text</a></li>
           <li><a href="pdf-to-tags.html" class="nav-link nav-link-active" aria-current="page">PDF to Tags</a></li>
           <li><a href="/blog/" class="nav-link">Blog</a></li>
         </ul>
@@ -184,7 +185,7 @@
             </div>
             <div class="faq-item">
               <dt>Why does my PDF show “No text could be extracted”?</dt>
-              <dd>That usually means the PDF is image-only (e.g. a scanned invoice or a photo of a document). We can only extract text from PDFs that have a text layer. Try a PDF where you can select and copy text, or copy the text manually and use <a href="/">Text to Tags</a> instead.</dd>
+              <dd>That usually means the PDF is image-only (e.g. a scanned invoice or a photo of a document). We can only extract text from PDFs that have a text layer. Try a PDF where you can select and copy text, or copy the text manually and use <a href="/text-to-tags.html">Text to Tags</a> instead.</dd>
             </div>
             <div class="faq-item">
               <dt>How do I turn a PDF into AI-ready format?</dt>
@@ -213,7 +214,9 @@
 
     <footer class="app-footer">
       <nav class="footer-nav" aria-label="Footer">
-        <a href="/">Text to Tags</a>
+        <a href="/">Home</a>
+        <a href="/text-to-tags.html">Text to Tags</a>
+        <a href="/post-ready-text.html">Post-ready text</a>
         <a href="pdf-to-tags.html">PDF to Tags</a>
         <a href="/blog/">Blog</a>
         <a href="https://github.com/meghana-shettigar/formantics/issues/new/" target="_blank" rel="noopener noreferrer">Support</a>
@@ -266,6 +269,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
       }
     </script>
+    <script src="paste-rich.js"></script>
     <script src="app.js"></script>
     <script src="pdf-upload.js"></script>
   </body>

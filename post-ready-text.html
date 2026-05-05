@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Post-ready text — keep line breaks &amp; indents | RetainFormat</title>
+    <meta
+      name="description"
+      content="Paste AI chat output and copy text that keeps line breaks and indentation for X, Threads, and other apps. Free — no sign-up."
+    />
+    <link rel="canonical" href="https://www.retainformat.com/post-ready-text.html" />
+    <link rel="icon" type="image/png" href="https://www.retainformat.com/assets/logo.png" sizes="48x48" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Post-ready text | RetainFormat" />
+    <meta
+      property="og:description"
+      content="Paste from Grok or ChatGPT and keep line breaks and indentation when posting to X and similar platforms."
+    />
+    <meta property="og:url" content="https://www.retainformat.com/post-ready-text.html" />
+    <meta property="og:image" content="https://www.retainformat.com/assets/logo.png" />
+  </head>
+  <body class="theme-light">
+    <header class="app-header">
+      <nav class="nav-inner" aria-label="Main">
+        <a href="/" class="nav-logo-link">
+          <img src="assets/logo.png" alt="RetainFormat" class="app-logo" width="100" height="40" decoding="async" />
+        </a>
+        <ul class="nav-links">
+          <li><a href="/" class="nav-link">Home</a></li>
+          <li><a href="/text-to-tags.html" class="nav-link">Text to Tags</a></li>
+          <li><a href="/post-ready-text.html" class="nav-link nav-link-active" aria-current="page">Post-ready text</a></li>
+          <li><a href="/blog/" class="nav-link">Blog</a></li>
+        </ul>
+        <div class="nav-right">
+          <div class="theme-toggle" aria-label="Background theme" role="radiogroup">
+            <button
+              id="lightThemeBtn"
+              class="theme-toggle-btn is-active"
+              type="button"
+              role="radio"
+              aria-checked="true"
+              aria-label="Light theme"
+            >
+              Light
+            </button>
+            <button
+              id="darkThemeBtn"
+              class="theme-toggle-btn"
+              type="button"
+              role="radio"
+              aria-checked="false"
+              aria-label="Dark theme"
+            >
+              Dark
+            </button>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="app-main" aria-label="Post-ready text tool">
+      <section class="hero">
+        <h1 class="hero-title">Post-ready text</h1>
+        <p class="hero-subtitle">
+          Paste AI output below — formatting from Grok and similar chats is preserved in the box — then click Generate and Copy for X and other apps.
+        </p>
+      </section>
+
+      <section class="panel" aria-labelledby="post-ready-input-title">
+        <div class="panel-header">
+          <h2 id="post-ready-input-title">Paste your text</h2>
+          <p class="panel-description">
+            Paste from Grok, ChatGPT, or any assistant <strong>with formatting</strong> — bold, bullets, and line breaks are kept (same as copying HTML from the chat). Leading spaces are normalized when you Generate for posting.
+          </p>
+        </div>
+        <div
+          id="postReadyInput"
+          class="editor post-ready-input-editor"
+          contenteditable="true"
+          role="textbox"
+          aria-multiline="true"
+          aria-labelledby="post-ready-input-title"
+          spellcheck="true"
+        ></div>
+        <div class="panel-footer">
+          <button id="postReadyGenerateBtn" class="primary-btn" type="button" disabled>Generate</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="post-ready-output-title">
+        <div class="panel-header">
+          <h2 id="post-ready-output-title">Copy for your post</h2>
+          <p class="panel-description">
+            Copy this block into your platform’s composer. Line breaks match your input; indentation uses non-breaking spaces so it survives paste.
+          </p>
+        </div>
+        <div class="post-ready-output-row">
+          <button id="postReadyCopyBtn" class="primary-btn" type="button" disabled>Copy</button>
+          <span id="postReadyCopyStatus" class="copy-status" aria-live="polite"></span>
+        </div>
+        <label class="sr-only" for="postReadyOutput">Generated text</label>
+        <textarea
+          id="postReadyOutput"
+          class="post-ready-textarea post-ready-textarea-output"
+          rows="12"
+          readonly
+          spellcheck="false"
+          aria-label="Generated post-ready text"
+        ></textarea>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="/">Home</a>
+        <a href="/text-to-tags.html">Text to Tags</a>
+        <a href="/post-ready-text.html">Post-ready text</a>
+        <a href="pdf-to-tags.html">PDF to Tags</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://github.com/meghana-shettigar/formantics/issues/new/" target="_blank" rel="noopener noreferrer">Support</a>
+      </nav>
+      <div class="legal-notice">
+        <p><strong>Disclaimer</strong></p>
+        <ul>
+          <li>You are responsible for the content you paste and how you use it. RetainFormat does not take responsibility for that content or its use.</li>
+        </ul>
+      </div>
+      <p class="app-credits">
+        © 2026 RetainFormat. Created by <a href="https://www.linkedin.com/in/meghana-shettigar-a53296134/" target="_blank" rel="noopener noreferrer">Meghana Shettigar</a>.
+      </p>
+    </footer>
+
+    <script src="site-theme.js"></script>
+    <script src="paste-rich.js"></script>
+    <script src="post-ready-text.js"></script>
+  </body>
+</html>
